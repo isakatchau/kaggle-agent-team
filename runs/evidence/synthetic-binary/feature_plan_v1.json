@@ -1,0 +1,27 @@
+{
+  "reasoning": "High-cardinality text ['customer_code']: keep length and leading token, drop raw. Dates ['signup_date'] -> year/month/weekday. Frequency-encode []. log1p skewed ['income']. log_target=False.",
+  "drop_columns": [
+    "customer_code"
+  ],
+  "log_transform_columns": [
+    "income"
+  ],
+  "datetime_columns": [
+    "signup_date"
+  ],
+  "frequency_encode_columns": [],
+  "text_length_columns": [
+    "customer_code"
+  ],
+  "regex_features": [
+    {
+      "column": "customer_code",
+      "pattern": "^\\s*([A-Za-z]+)",
+      "name": "customer_code_prefix"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [],
+  "add_missing_indicators": true,
+  "log_target": false
+}

@@ -1,0 +1,15 @@
+{
+  "best": "it4_ensemble",
+  "checkpoints": [
+    "it1_linear_base",
+    "it2_lgbm_shallow",
+    "it4_linear_base"
+  ],
+  "params": {
+    "weights": {
+      "it1_linear_base": 0.5,
+      "it4_linear_base": 0.333,
+      "it2_lgbm_shallow": 0.167
+    }
+  }
+}

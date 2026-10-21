@@ -1,0 +1,10 @@
+{
+  "best": "it1_linear_base",
+  "checkpoints": [
+    "it1_linear_base"
+  ],
+  "params": {
+    "C": 1.0,
+    "alpha": 1.0
+  }
+}

@@ -1,0 +1,9 @@
+competition: house-prices-advanced-regression-techniques
+target_percentile: 0.20
+cv_folds: 5
+budget:
+  max_iterations: 4
+  max_submissions: 3
+llm:
+  provider: openai
+  model: gpt-4o-mini

@@ -1,0 +1,17 @@
+{
+  "run_id": "20261021T030558Z",
+  "competition": "synthetic-regression",
+  "platform": "offline",
+  "llm": "heuristic",
+  "metric": "rmsle",
+  "iterations": 4,
+  "experiments": 18,
+  "best_cv": 0.2681422892463294,
+  "best_experiment": "it4_ensemble",
+  "submissions": 1,
+  "best_lb": 0.2710462832256105,
+  "best_percentile": 0.09975062344139651,
+  "target_percentile": 0.05,
+  "minutes": 1.0,
+  "run_dir": "runs/synthetic-regression/20261021T030558Z"
+}

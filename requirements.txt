@@ -1,0 +1,14 @@
+langgraph==1.2.16
+openai==3.35.1
+pydantic==2.14.1
+PyYAML==6.0.3
+python-dotenv==1.2.4
+pandas==3.0.6
+numpy==2.5.4
+scikit-learn==1.9.1
+lightgbm==4.7.0
+joblib==1.6.0
+matplotlib==3.11.2
+kaggle==2.2.4
+streamlit==1.66.0
+pytest==9.1.1

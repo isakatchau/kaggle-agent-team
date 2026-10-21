@@ -1,0 +1,14 @@
+# Template for a Kaggle Playground Series episode. Find the current slug with
+#   python -m kagent list-playground
+# and replace the value below. Large episodes train on a sample for speed.
+competition: playground-series-s6eXX
+target_percentile: 0.20
+cv_folds: 5
+sample_rows: 300000
+budget:
+  max_iterations: 4
+  max_submissions: 4
+  max_experiments_per_iteration: 3
+llm:
+  provider: openai
+  model: gpt-4o-mini

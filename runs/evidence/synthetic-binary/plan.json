@@ -1,0 +1,17 @@
+{
+  "reasoning": "Target 'churned' is the train-only column present in the sample submission; 2 unique values of dtype int64 -> binary. Metric 'roc_auc' from the evaluation text or sample dtype; id 'id' is the first sample column. Gradient boosting first, linear and forests for diversity.",
+  "task": "binary",
+  "metric": "roc_auc",
+  "target": "churned",
+  "id_column": "id",
+  "submission_format": "proba",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "linear",
+    "random_forest"
+  ],
+  "risks": [
+    "high-cardinality text columns ['customer_code']: extract structure or drop"
+  ]
+}

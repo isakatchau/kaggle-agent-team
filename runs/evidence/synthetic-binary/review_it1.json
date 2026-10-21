@@ -1,0 +1,7 @@
+{
+  "reasoning": "Percentile 0.065 is within target 0.2.",
+  "diagnosis": "target reached",
+  "continue_": false,
+  "next_focus": "stop",
+  "suggestions": []
+}

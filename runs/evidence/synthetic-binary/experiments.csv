@@ -1,0 +1,6 @@
+name,model,iteration,feature_version,cv_score,cv_std,seconds,params,notes
+it1_lgbm_base,lightgbm,1,1,0.743431,0.022785,3.4,"{'n_estimators': 600, 'learning_rate': 0.03, 'num_leaves': 31, 'max_depth': -1, 'min_child_samples': 20, 'subsample': 0.8, 'colsample_bytree': 0.8, 'reg_alpha': 0.0, 'reg_lambda': 1.0}",[]
+it1_hist_gb_base,hist_gb,1,1,0.731698,0.032453,4.2,"{'max_iter': 400, 'learning_rate': 0.05, 'max_leaf_nodes': 31, 'min_samples_leaf': 20, 'l2_regularization': 0.0}",[]
+it1_linear_base,linear,1,1,0.773547,0.026323,0.4,"{'C': 1.0, 'alpha': 1.0}",[]
+it1_random_forest_base,random_forest,1,1,0.736773,0.025582,7.8,"{'n_estimators': 300, 'max_depth': 12, 'min_samples_leaf': 2, 'max_features': 0.5}",[]
+it1_ensemble,ensemble,1,1,0.773547,,0.0,{'weights': {'it1_linear_base': 1.0}},[]

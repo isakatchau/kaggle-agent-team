@@ -1,0 +1,11 @@
+[
+  {
+    "iteration": 1,
+    "candidate": "it1_linear_base",
+    "cv_score": 0.2685896351539954,
+    "lb_score": 0.2710462832256105,
+    "percentile": 0.09975062344139651,
+    "file": "runs/synthetic-regression/20261021T030558Z/submissions/it1_linear_base.csv",
+    "leaderboard_size": 400
+  }
+]

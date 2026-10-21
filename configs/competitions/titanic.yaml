@@ -1,0 +1,12 @@
+# Only `competition` is required. Everything else is inferred by the Planner
+# (target, id, task, metric, submission format) and can be overridden here.
+competition: titanic
+target_percentile: 0.20
+cv_folds: 5
+budget:
+  max_iterations: 4
+  max_submissions: 3
+  max_experiments_per_iteration: 4
+llm:
+  provider: openai
+  model: gpt-4o-mini

@@ -1,0 +1,9 @@
+.env
+kaggle.json
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+data/
+runs/*
+!runs/evidence/

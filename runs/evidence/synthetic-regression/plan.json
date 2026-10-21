@@ -1,0 +1,18 @@
+{
+  "reasoning": "Target 'lifetime_value' is the train-only column present in the sample submission; 3998 unique values of dtype float64 -> regression. Metric 'rmsle' from the evaluation text or sample dtype; id 'id' is the first sample column. Gradient boosting first, linear and forests for diversity.",
+  "task": "regression",
+  "metric": "rmsle",
+  "target": "lifetime_value",
+  "id_column": "id",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "linear",
+    "random_forest"
+  ],
+  "risks": [
+    "target skew 1.39: train on log1p(target)",
+    "high-cardinality text columns ['customer_code']: extract structure or drop"
+  ]
+}
