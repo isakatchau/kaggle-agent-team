@@ -1,0 +1,56 @@
+{
+  "reasoning": "The Titanic data is a binary classification problem (Survived). Key risks are missing Age values, many missing Cabin entries, and high\u2011cardinality text columns (Name, Ticket, Cabin). We extract useful structure from these texts with regexes: Title from Name, TicketPrefix from Ticket, and CabinDeck from Cabin. Titles and cabin decks repeat across rows and appear in the test set, so we add group target encoding for them to capture shared survival propensity. The raw high\u2011cardinality columns are then dropped. Age missingness will be handled by the model (tree\u2011based models can split on missing), but we keep a missing indicator (default). Fare is highly skewed, so we log\u2011transform it. We also frequency\u2011encode Ticket and Cabin (the raw strings) to give the model a sense of rarity. Finally we add a group\u2011size column for TicketPrefix to let the model know how many passengers share the same ticket prefix, which can be a proxy for family or travel group size. No datetime columns exist, and we do not log\u2011transform the target because it is binary.",
+  "drop_columns": [
+    "Name",
+    "Ticket",
+    "Cabin"
+  ],
+  "log_transform_columns": [
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Ticket",
+    "Cabin"
+  ],
+  "text_length_columns": [],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": ",\\s*([^\\.]+)\\.",
+      "name": "Title"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^([A-Za-z\\.\\/]+)",
+      "name": "TicketPrefix"
+    },
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Za-z])",
+      "name": "CabinDeck"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [],
+  "group_target_encoding": [
+    {
+      "keys": [
+        "Ticket"
+      ],
+      "name": "Ticket_grp",
+      "min_group_size": 2,
+      "smoothing": 0.0
+    },
+    {
+      "keys": [
+        "Cabin"
+      ],
+      "name": "Cabin_grp",
+      "min_group_size": 2,
+      "smoothing": 0.0
+    }
+  ],
+  "add_missing_indicators": true,
+  "log_target": false
+}

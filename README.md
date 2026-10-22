@@ -143,6 +143,7 @@ make docker-run COMP=titanic             # mounts ~/.kaggle read-only and passes
 | titanic, run 3 (after the reviewer stall guard) | accuracy ↑ | 0.8395 (3×5-fold) | 0.76794 | top 69.8% | 4 / 1 | `runs/evidence/titanic-groq-run3` |
 | titanic, run 4 (after group target encoding; LLM chose category keys) | accuracy ↑ | 0.8272 submitted (3×5-fold) | 0.74401 | top 93.1% | 3 / 1 | `runs/evidence/titanic-groq-run4` |
 | titanic, run 5 (category keys skipped, heuristic keys used) | accuracy ↑ | 0.8418 (3×5-fold) | 0.76315 | top 81.4% | 1 / 1 | `runs/evidence/titanic-groq-run5` |
+| titanic, run 6 (`group_override` + one-standard-error selection) | accuracy ↑ | 0.8361 submitted (3×5-fold) | 0.74401 | top 93.1% | 4 / 1 (2nd hit the daily limit) | `runs/evidence/titanic-groq-run6` |
 | titanic (heuristic agents, `--no-submit`) | accuracy ↑ | 0.8418 (nested ensemble); 0.8350 best single | | | 4 / 0 | `runs/evidence/titanic-heuristic` |
 | house-prices-advanced-regression-techniques | RMSLE ↓ | not run | | | | |
 
@@ -153,7 +154,23 @@ make docker-run COMP=titanic             # mounts ~/.kaggle read-only and passes
 - *Round 1 (runs 2-3): variance levers.* Repeated CV with a pessimistic submit gate (`cv_lcb`) and a reviewer guard against repeating a focus that just produced no CV gain. Both worked as designed (the gate held back every later candidate; the guard forced a features round) and neither moved the score: CV sat at 0.83-0.84 and the public score at 0.768-0.782, a systematic gap that choosing between similar candidates cannot close.
 - *Round 2 (runs 4-5): bias lever, found by a multi-agent workflow.* One agent researched leak-free Titanic techniques on the web; three implemented a lever each in isolated worktrees, measured with the shared harness `scripts/bench_cv.py`, and three adversarial verifiers reproduced the numbers and hunted for leakage. Kept: **fold-safe group target encoding** (+0.6 to +0.7 `cv_lcb` over 5 CV seeds, no gain from shuffled keys). Rejected: a one-standard-error selection rule (no gain on held-out splits; its evidence script inferred test labels from LB scores, which is leaderboard probing) and a gated override of a simple baseline (no change on Titanic).
 - *What the runs showed.* In both runs the LLM picked category keys (ticket prefix, cabin letter) for the group encoding. Inside big groups the leave-one-out mean takes one value per class, so the model read training labels back (CV 0.847 → 0.827, public 311/418). Such keys are now skipped (mean group size above 10) and replaced by the heuristic's keys; with that, run 5 reached CV 0.842 but scored 319/418. The research had found the same pattern in public notebooks: on the current 418-row leaderboard, adding family-survival features raised CV and lowered the public score, and the leak-free results above 0.80 come from a simple rule (the gender model, 0.766) with a handful of near-certain group-based overrides, not from gradient boosting over many features. Run 5's reviewer also stopped after one round of four; a guard now refuses a stop below target before two rounds exist.
-- *Conclusion.* On Titanic, CV is not a reliable proxy for the public score once features are this rich, and the system optimises CV. Reaching 0.80+ legitimately would mean giving the agents a model op anchored on a simple rule with a small number of group-based overrides, and judging it by something other than CV; that is the open item.
+- *Round 3 (run 6): a model op of the winning shape.* `group_override` (a shallow tree changed only where a row's group is unanimous) and a one-standard-error rule in the Evaluator (the simplest of statistically tied candidates wins). The LLM proposed `group_override` every round but with its own parameters (CV 0.782-0.815, never the CV-chosen default), category keys again (skipped), and the first submission, a boosted tree, scored 311/418.
+
+**Why the agent team stops near 0.77: what was tested.** Three manual baselines, fixed before any score was seen, were submitted to test it (`scripts/diagnostics/titanic_baselines.py`; files in `runs/evidence/diagnostics`). They are diagnostics, not results of the agent team.
+
+| Model | CV (3×5) | Public | Position |
+|---|---|---|---|
+| gender rule (no fitted parameter) | 0.7868 | 320/418 | top 73.3% |
+| shallow random forest, 6 features | 0.8358 | 324/418 | top 40.3% |
+| agent team, 6 submissions | 0.827-0.842 | 311-327 | top 22-93% |
+| woman-child-group rule (gender + 16 unanimous-group overrides, train labels only) | 0.8417 | **334/418** | **top 7.8%** |
+
+- The cause is the model class, and CV cannot see it: the WCG rule and the agents' best model have the same CV (0.8417 vs 0.8418) and differ by 15 passengers on the public test. Across the agents' 6 submissions, Spearman ρ(CV, public) = 0.16 (p = 0.76).
+- Not feature richness: the 6-feature forest has the same CV-public gap (6.1 points) as the agents' models.
+- Not leakage from random folds: a validation row shares a ticket with training rows 34% of the time, a test row 36%; grouping folds by ticket costs 0.6 points.
+- Not drift: adversarial validation AUC train vs test = 0.51.
+- Leaderboard noise: one binomial standard error is 8.5 passengers; 327 is not distinguishable from 319-322 (sign test on the differing rows, p = 0.23-0.38), only from 311 (p = 0.014).
+- `group_override` reproduces part of the mechanism (CV 0.826-0.833 with the plans' keys, against 0.8417 for the hand-specified rule) and stays outside one standard error of the boosted trees, so a principled selection does not pick it. Tuning the selection until it does would be fitting it to a public score already seen.
 
 **LLM vs heuristic.** Under the same nested CV, the differences (best single 0.8373 vs 0.8350, ensemble 0.8395 vs 0.8418) are well inside the fold std (~0.02). On a dataset this small, the LLM's measurable contribution is the quality and traceability of its choices, not CV. Reasoning errors seen in the logs, which guardrails do not catch: the reviewer read the CV-LB gap as overfitting and then asked for more capacity; the reviewer suggested CatBoost/XGBoost, which are outside the typed menu; the Evaluator read a higher in-sample ensemble CV as evidence *against* overfitting.
 

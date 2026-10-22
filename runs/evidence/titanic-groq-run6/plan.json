@@ -1,0 +1,20 @@
+{
+  "reasoning": "The profile shows a single target column\u202fSurvived (binary 0/1) with no missing values, indicating a binary classification task. The sample submission contains PassengerId and Survived as integer labels, so the required submission format is plain class labels (label). No metric is overridden; the classic Titanic competition uses accuracy, which matches the available metric list. The identifier column is PassengerId. Suitable first\u2011pass models are tree\u2011based ensembles and a linear model, all present in the available list. Main risks are the 19.9% missing Age values, many missing Cabin entries (77%), and high\u2011cardinality string columns (Name, Ticket, Cabin) that need proper encoding, plus a modest class imbalance (\u224848% positive).",
+  "task": "binary",
+  "metric": "accuracy",
+  "target": "Survived",
+  "id_column": "PassengerId",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees",
+    "linear"
+  ],
+  "risks": [
+    "missing values in Age and Cabin",
+    "high\u2011cardinality categorical features (Name, Ticket, Cabin)",
+    "moderate class imbalance"
+  ]
+}

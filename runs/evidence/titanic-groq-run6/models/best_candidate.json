@@ -1,0 +1,17 @@
+{
+  "best": "it4_lgbm_tuned",
+  "checkpoints": [
+    "it4_lgbm_tuned"
+  ],
+  "params": {
+    "n_estimators": 800,
+    "learning_rate": 0.03,
+    "num_leaves": 15,
+    "max_depth": -1,
+    "min_child_samples": 100,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.0,
+    "reg_lambda": 3.5
+  }
+}
