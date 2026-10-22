@@ -18,6 +18,14 @@ def _looks_like_date(examples: list[str]) -> bool:
     return parsed.notna().mean() >= 0.8 and any(ch in examples[0] for ch in "-/")
 
 
+def _shared_group_key(c: dict, n: int) -> bool:
+    """High-cardinality text whose values repeat in train and reappear in test (a ticket, booking or
+    household code): a per-group target statistic learned on train can reach the test rows."""
+    filled = n * (1 - c["missing_pct"] / 100)
+    return (c["dtype"] in TEXT_DTYPES and c["n_unique"] > max(20, 0.05 * n)
+            and c["n_unique"] <= 0.9 * filled and c.get("test_seen_pct", 0) >= 10)
+
+
 class DataAgent(Agent[FeaturePlan]):
     name = "data"
     schema = FeaturePlan
@@ -27,7 +35,9 @@ class DataAgent(Agent[FeaturePlan]):
         "the feature importances and the reviewer's suggestions from earlier rounds. Typical moves: "
         "extract structure from high-cardinality text with a regex capture group (titles, prefixes, "
         "codes), parse dates, frequency-encode high-cardinality categoricals, group sizes "
-        "(e.g. people sharing a ticket), ratios between meaningful numerics, log-transform skewed "
+        "(e.g. people sharing a ticket), group target encoding when rows that share a code (or a "
+        "regex-extracted part of one) plausibly share the outcome and the code reappears in test "
+        "(profile test_seen_pct), ratios between meaningful numerics, log-transform skewed "
         "positive numerics, train on log1p(target) for skewed regression targets or RMSLE. Drop "
         "raw columns that are identifiers or free text once their signal is extracted."
     )
@@ -38,12 +48,15 @@ class DataAgent(Agent[FeaturePlan]):
         excluded = {plan["target"], plan["id_column"]}
         cols = [c for c in prof["columns"] if c["name"] not in excluded and c["in_test"]]
 
-        drop, text_len, regex, dates, freq, logs = [], [], [], [], [], []
+        drop, text_len, regex, dates, freq, logs, encodings = [], [], [], [], [], [], []
         for c in cols:
             is_text = c["dtype"] in TEXT_DTYPES
             if is_text and _looks_like_date(c["examples"]):
                 dates.append(c["name"])
-            elif is_text and c["n_unique"] > 0.5 * n:
+                continue
+            if _shared_group_key(c, n):
+                encodings.append({"keys": [c["name"]], "name": f"{c['name']}_grp"})
+            if is_text and c["n_unique"] > 0.5 * n:
                 text_len.append(c["name"])
                 regex.append({"column": c["name"], "pattern": r"^\s*([A-Za-z]+)", "name": f"{c['name']}_prefix"})
                 drop.append(c["name"])
@@ -68,10 +81,11 @@ class DataAgent(Agent[FeaturePlan]):
         return FeaturePlan(
             reasoning=(f"High-cardinality text {text_len}: keep length and leading token, drop raw. "
                        f"Dates {dates} -> year/month/weekday. Frequency-encode {freq}. log1p skewed {logs}. "
-                       f"log_target={log_target}." + reason_extra),
+                       f"Group target encoding on codes that repeat and reappear in test "
+                       f"{[e['keys'][0] for e in encodings]}. log_target={log_target}." + reason_extra),
             drop_columns=drop, text_length_columns=text_len, regex_features=regex, datetime_columns=dates,
             frequency_encode_columns=freq, log_transform_columns=logs, ratio_features=ratios,
-            group_size_columns=groups, log_target=log_target,
+            group_size_columns=groups, group_target_encoding=encodings, log_target=log_target,
         )
 
     def guard(self, d: FeaturePlan, ctx: dict) -> tuple[FeaturePlan, list[str]]:
@@ -90,8 +104,22 @@ class DataAgent(Agent[FeaturePlan]):
         if plan["task"] != "regression" and d.log_target:
             d = d.model_copy(update={"log_target": False})
             notes.append("log_target only applies to regression")
+
+        info = {c["name"]: c for c in prof["columns"]}
+
+        def unique_key(col: str) -> bool:  # never repeats in train, (almost) never reappears in test
+            c = info.get(col)
+            return c is not None and c.get("test_seen_pct", 100) < 1 and \
+                c["n_unique"] >= prof["n_train"] * (1 - c["missing_pct"] / 100)
+
+        useless = [g.name for g in d.group_target_encoding if any(unique_key(k) for k in g.keys)]
+        if useless:
+            d = d.model_copy(update={"group_target_encoding": [g for g in d.group_target_encoding
+                                                               if g.name not in useless]})
+            notes.append(f"group_target_encoding {useless}: a key is unique per row, so no group has other members")
         return d, notes
 
     def _headline(self, d: FeaturePlan) -> str:
         return (f"drop={len(d.drop_columns)} regex={len(d.regex_features)} ratios={len(d.ratio_features)} "
-                f"groups={len(d.group_size_columns)} dates={len(d.datetime_columns)} log_target={d.log_target}")
+                f"groups={len(d.group_size_columns)} group_te={len(d.group_target_encoding)} "
+                f"dates={len(d.datetime_columns)} log_target={d.log_target}")

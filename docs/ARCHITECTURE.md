@@ -62,7 +62,7 @@ Agents do not call tools themselves. Each agent returns a typed decision, and th
 | Agent | Rule | Where |
 |---|---|---|
 | Planner | Target ∈ train-only columns; id ∈ sample submission; metric consistent with task; YAML overrides win; submission format re-derived after overrides | `planner.py::guard` |
-| Data | Columns must exist with the right type; regex must compile with ≥ 1 capture group; ≤ 20 ratios, ≤ 10 group sizes; never drop everything; RMSLE ⇒ log target; no log target outside regression | `features.py::validate_plan`, `data.py::guard` |
+| Data | Columns must exist with the right type; regex must compile with ≥ 1 capture group; ≤ 20 ratios, ≤ 10 group sizes; ≤ 5 group target encodings whose keys exist (raw or regex-derived) and are not unique per row; never drop everything; RMSLE ⇒ log target; no log target outside regression | `features.py::validate_plan`, `data.py::guard` |
 | Modeling | Params clipped to `PARAM_SPACE` bounds, unknown params ignored; duplicates of past (model, params, feature version) skipped; batch ≤ `max_experiments_per_iteration`; no forests above 200k rows | `train.py::clip_params`, `modeling.py::guard` |
 | Evaluator | Submissions ≤ `max_submissions`; submit only when CV beats the best submitted CV by `min_improvement`; candidate must exist; submission must pass the pre-flight check (columns, rows, no NaN) | `evaluator.py::guard`, `submission.py::check_submission` |
 | Reviewer | Stop when the percentile ≤ target or no iterations are left; `continue` and `next_focus` kept consistent | `reviewer.py::guard` |
@@ -127,6 +127,6 @@ The other files in the run folder are:
 
 `make test` runs offline in about 10 s:
 
-- **Tools:** metrics and direction, percentile, param clipping, plan validation, the feature → train → ensemble → submission → offline-score round trip, integer label dtype, and Kaggle CSV parsing.
+- **Tools:** metrics and direction, percentile, param clipping, plan validation, the feature → train → ensemble → submission → offline-score round trip, integer label dtype, Kaggle CSV parsing, and the group target encoding's fold safety (a row's own label never changes its own value; shuffled keys give no CV gain while a naive encoding does).
 - **Agents with a scripted LLM:** hallucinated target, id and metric corrected by the guards; invalid JSON and outages falling back; the evaluator unable to exceed its budget or submit without improvement; the reviewer stopping at the target.
 - **End to end:** binary and regression loops on generated competitions. These check that every agent logged a decision and that the artifacts exist: plan, experiments, summary, plots, checkpoints and the index.

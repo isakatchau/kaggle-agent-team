@@ -1,0 +1,67 @@
+{
+  "reasoning": "LLM plan v1 + group target encoding: gte_surname, gte_ticket",
+  "drop_columns": [
+    "Name",
+    "Ticket",
+    "Cabin",
+    "Surname"
+  ],
+  "log_transform_columns": [
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Ticket",
+    "Cabin",
+    "Embarked"
+  ],
+  "text_length_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": ",\\s*([^\\.]+)\\.",
+      "name": "Title"
+    },
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Za-z])",
+      "name": "Deck"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^([A-Za-z\\.\\/]+)",
+      "name": "TicketPrefix"
+    },
+    {
+      "column": "Name",
+      "pattern": "^([^,]+),",
+      "name": "Surname"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [
+    [
+      "SibSp",
+      "Parch"
+    ]
+  ],
+  "add_missing_indicators": true,
+  "log_target": false,
+  "group_target_encoding": [
+    {
+      "keys": [
+        "Surname"
+      ],
+      "name": "gte_surname"
+    },
+    {
+      "keys": [
+        "Ticket"
+      ],
+      "name": "gte_ticket"
+    }
+  ]
+}

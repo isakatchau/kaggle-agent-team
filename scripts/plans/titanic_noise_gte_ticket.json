@@ -1,0 +1,57 @@
+{
+  "reasoning": "Noise control: same group target encoding as titanic_llm_gte_ticket on a shuffled ticket column",
+  "drop_columns": [
+    "Name",
+    "Ticket",
+    "Cabin",
+    "NoiseSurname",
+    "NoiseTicket"
+  ],
+  "log_transform_columns": [
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Ticket",
+    "Cabin",
+    "Embarked"
+  ],
+  "text_length_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": ",\\s*([^\\.]+)\\.",
+      "name": "Title"
+    },
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Za-z])",
+      "name": "Deck"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^([A-Za-z\\.\\/]+)",
+      "name": "TicketPrefix"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [
+    [
+      "SibSp",
+      "Parch"
+    ]
+  ],
+  "add_missing_indicators": true,
+  "log_target": false,
+  "group_target_encoding": [
+    {
+      "keys": [
+        "NoiseTicket"
+      ],
+      "name": "gte_ticket"
+    }
+  ]
+}

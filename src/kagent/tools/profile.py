@@ -34,6 +34,8 @@ def profile(train: pd.DataFrame, test: pd.DataFrame, sample: pd.DataFrame) -> di
             "missing_pct": round(float(s.isna().mean()) * 100, 2),
             "examples": [str(v) for v in s.dropna().unique()[:5]],
         }
+        if col in test.columns:  # can a statistic learned per value on train reach the test rows?
+            info["test_seen_pct"] = round(float(test[col].isin(s.dropna().unique()).mean()) * 100, 2)
         if pd.api.types.is_numeric_dtype(s):
             info["min"] = float(np.nanmin(s)) if s.notna().any() else None
             info["max"] = float(np.nanmax(s)) if s.notna().any() else None

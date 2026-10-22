@@ -128,6 +128,38 @@ def test_openai_compatible_client_names_the_provider(monkeypatch, base_url, name
     assert OpenAIClient("m").name == name
 
 
+def _booking_ctx():
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    codes = [f"B{i}" for i in rng.integers(0, 150, 600)]  # repeats in train, reappears in test
+    train = pd.DataFrame({"id": range(400), "booking": codes[:400], "name": [f"n{i}" for i in range(400)],
+                          "region": rng.choice(["a", "b", "c"], 400), "y": rng.integers(0, 2, 400)})
+    test = pd.DataFrame({"id": range(400, 600), "booking": codes[400:], "name": [f"m{i}" for i in range(200)],
+                         "region": rng.choice(["a", "b", "c"], 200)})
+    prof = profile(train, test, pd.DataFrame({"id": test["id"], "y": 0}))
+    return {"profile": prof, "plan": {"target": "y", "id_column": "id", "task": "binary", "metric": "accuracy"},
+            "iteration": 1, "focus": "features", "feature_importance": {}}
+
+
+def test_data_heuristic_proposes_group_encoding_only_for_shared_codes(logger):
+    from kagent.agents import DataAgent
+
+    plan = DataAgent(None, logger).decide(_booking_ctx())
+    assert [g.keys for g in plan.group_target_encoding] == [["booking"]]  # not the unique name, not region
+
+
+def test_data_guard_drops_group_encoding_on_a_unique_key(logger):
+    from kagent.agents import DataAgent
+
+    llm = ScriptedLLM({"the data agent": {"reasoning": "r", "group_target_encoding": [
+        {"keys": ["name"], "name": "family"}, {"keys": ["booking", "nope"], "name": "bad"},
+        {"keys": ["booking"], "name": "party"}]}})
+    plan = DataAgent(llm, logger).decide(_booking_ctx())
+    assert [g.name for g in plan.group_target_encoding] == ["party"]
+
+
 def test_modeling_guard_does_not_double_the_iteration_prefix(logger):
     from kagent.agents import ModelingAgent
     from kagent.agents.schemas import Experiment, ExperimentBatch

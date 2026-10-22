@@ -89,6 +89,115 @@ def test_blend_cv_is_not_inflated_by_weight_selection():
     assert np.mean(nested) <= 0
 
 
+def _grouped(seed: int = 0, n_train: int = 900, n_test: int = 300):
+    """Rows in groups of 1-4 that share a latent effect on y; `noise` is the same ids shuffled across rows."""
+    rng = np.random.default_rng(seed)
+    n = n_train + n_test
+    grp = np.repeat(np.arange(n), rng.integers(1, 5, n))[:n]
+    rng.shuffle(grp)
+    x1, x2 = rng.normal(size=n), rng.normal(size=n)
+    y = (x1 + rng.normal(0, 2.0, n)[grp] + rng.logistic(size=n) > 0).astype(int)
+    df = pd.DataFrame({"id": np.arange(n), "x1": x1, "x2": x2, "grp": [f"g{g}" for g in grp],
+                       "noise": [f"g{g}" for g in rng.permutation(grp)], "y": y})
+    return df.iloc[:n_train].reset_index(drop=True), df.iloc[n_train:].drop(columns="y").reset_index(drop=True)
+
+
+def test_group_target_encoding_never_reads_a_rows_own_label():
+    from kagent.tools.features import TargetGroups, group_target_encode
+
+    rng = np.random.default_rng(0)
+    codes = rng.integers(-1, 40, 200)
+    tg = TargetGroups("g", codes[:150], codes[150:])
+    Y = rng.integers(0, 2, (150, 1)).astype(float)
+    tr, va = np.arange(120), np.arange(120, 150)
+    enc_tr, enc_va, enc_te = group_target_encode(tg, Y, tr, va)
+
+    for i in (0, 5, 77):  # value = mean and count of the *other* training-fold members of the group
+        others = [j for j in tr if codes[j] == codes[i] and j != i and codes[i] >= 0]
+        assert enc_tr[i, 1] == len(others)
+        assert np.isnan(enc_tr[i, 0]) if not others else np.isclose(enc_tr[i, 0], Y[others, 0].mean())
+    flipped_va = Y.copy()
+    flipped_va[va] = 1 - flipped_va[va]  # validation labels are never read
+    for a, b in zip((enc_tr, enc_va, enc_te), group_target_encode(tg, flipped_va, tr, va)):
+        assert np.array_equal(a, b, equal_nan=True)
+    for i in range(0, 120, 7):  # flipping a training label never changes that row's own encoding
+        flipped = Y.copy()
+        flipped[i] = 1 - flipped[i]
+        assert np.array_equal(group_target_encode(tg, flipped, tr, va)[0][i], enc_tr[i], equal_nan=True)
+
+
+def test_smoothed_group_encoding_cannot_be_decoded_into_the_rows_own_label():
+    # A training row's value must depend only on its group-mates' labels: two rows whose mates have the same
+    # count and label sum get the same value whatever their own label. An exclude-self *prior* breaks this.
+    from kagent.tools.features import TargetGroups, group_target_encode
+
+    rng = np.random.default_rng(1)
+    codes = rng.integers(0, 60, 300)
+    Y = rng.integers(0, 2, (300, 1)).astype(float)
+    tr, va = np.arange(250), np.arange(250, 300)
+    enc_tr = group_target_encode(TargetGroups("g", codes, codes[:10], smoothing=3.0), Y, tr, va)[0]
+    values: dict[tuple, set] = {}
+    for i in tr:
+        mates = (codes[tr] == codes[i]) & (tr != i)
+        if mates.any():
+            values.setdefault((int(mates.sum()), float(Y[tr][mates, 0].sum())), set()).add(enc_tr[i, 0])
+    assert len(values) > 10 and all(len(v) == 1 for v in values.values())
+
+
+def test_group_target_encoding_noise_keys_give_no_cv_gain():
+    from kagent.agents.schemas import GroupTargetEncoding
+
+    # one data seed moves accuracy by about +-0.01, so gains are averaged over three
+    gains = {m: {"real": [], "noise": [], "leaky": []} for m in ("lightgbm", "linear")}
+    for seed in range(3):
+        train, test = _grouped(seed)
+        y = train["y"].to_numpy()
+
+        def features(key=None):
+            enc = [GroupTargetEncoding(keys=[key], name="gte")] if key else []
+            return build_features(train, test, "y", "id",
+                                  FeaturePlan(reasoning="", drop_columns=["grp", "noise"], group_target_encoding=enc))
+
+        leaky = features()  # control: an encoding that includes the row's own label inflates CV even on noise keys
+        leaky.X_train["naive"] = train.groupby("noise")["y"].transform("mean").to_numpy()
+        leaky.X_test["naive"] = test["noise"].map(train.groupby("noise")["y"].mean()).to_numpy()
+        for model, g in gains.items():
+            def cv(fm):
+                return run_cv(fm, y, "binary", "accuracy", "m", model, {"n_estimators": 100}, 5, 0).cv_score
+            base = cv(features())
+            g["real"].append(cv(features("grp")) - base)
+            g["noise"].append(cv(features("noise")) - base)
+            g["leaky"].append(cv(leaky) - base)
+    for model, g in gains.items():
+        assert np.mean(g["real"]) > 0.04, (model, g)    # true groups carry signal
+        assert np.mean(g["noise"]) < 0.01, (model, g)   # shuffled keys, same cardinality: no gain
+        assert np.mean(g["leaky"]) > 0.1, (model, g)    # the test does catch an encoding that leaks
+
+
+def test_group_target_encoding_plan_validation_and_multiclass():
+    from kagent.agents.schemas import GroupTargetEncoding
+
+    plan = FeaturePlan(reasoning="", regex_features=[{"column": "t", "pattern": r"^(\w)", "name": "t0"}],
+                       drop_columns=["t0"], group_target_encoding=[
+                           GroupTargetEncoding(keys=["t0", "a"], name="ok"),
+                           GroupTargetEncoding(keys=["missing"], name="bad_key"),
+                           GroupTargetEncoding(keys=["a"], name="a")])  # name collides with a column
+    clean, issues = validate_plan(plan, ["a", "t"], ["a"])
+    assert [g.name for g in clean.group_target_encoding] == ["ok"] and clean.drop_columns == ["t0"]
+    assert len(issues) == 2
+
+    # the regex does not match "-": that row belongs to no group; sizes count train+test rows
+    train = pd.DataFrame({"id": range(6), "t": ["xa", "xb", "ya", "yb", "xc", "-"], "a": [1, 1, 2, 2, 1, 1],
+                          "c": [0, 1, 2, 2, 0, 1]})
+    test = train.drop(columns="c").assign(id=range(6, 12))
+    fm = build_features(train, test, "c", "id", clean)
+    assert "t0" not in fm.X_train and fm.X_train["ok_size"].tolist() == [6, 6, 4, 4, 6, 1]
+    assert fm.target_groups[0].train[5] == -1
+    r = run_cv(fm, train["c"].to_numpy(), "multiclass", "log_loss", "m", "linear", {}, 2, 0)
+    assert r.oof.shape == (6, 3)
+    assert {"ok_0", "ok_1", "ok_2", "ok_n"} <= set(fm.target_groups[0].columns(3))
+
+
 def test_repeated_cv_scores_every_fold_of_every_repeat(binary_comp):
     train, test, sample = load_competition_files(binary_comp)
     fm = build_features(train, test, "churned", "id", FeaturePlan(reasoning=""))

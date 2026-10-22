@@ -1,0 +1,47 @@
+{
+  "reasoning": "The Titanic data is a binary classification problem (Survived). Key risks are class imbalance (~38% survived), missing Age (~20%) and Cabin (~77%), and high\u2011cardinality text fields (Name, Ticket, Cabin). We drop pure identifiers (PassengerId) and raw high\u2011cardinality text after extracting signal. From Name we capture the passenger title (Mr, Mrs, Miss, etc.) using a regex, which is a strong predictor. From Cabin we extract the deck letter, and from Ticket we extract any alphabetic prefix. These three new categorical features replace the original raw strings. High\u2011cardinality categorical columns (Ticket, Cabin, Embarked) are frequency\u2011encoded to preserve rarity information. Skewed numeric Fare (skew 4.79) is log\u2011transformed; Age is left linear but a missing indicator is added. Family size (SibSp + Parch + 1) is created via a group\u2011size feature, and we add a ratio of Fare per family member to capture per\u2011person cost. Text length of Name and Ticket are added as simple numeric proxies. Missing indicators are enabled for all columns with NA. No log\u2011target is needed for binary classification.",
+  "drop_columns": [
+    "Name",
+    "Ticket",
+    "Cabin"
+  ],
+  "log_transform_columns": [
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Ticket",
+    "Cabin",
+    "Embarked"
+  ],
+  "text_length_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": ",\\s*([^\\.]+)\\.",
+      "name": "Title"
+    },
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Za-z])",
+      "name": "Deck"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^([A-Za-z\\.\\/]+)",
+      "name": "TicketPrefix"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [
+    [
+      "SibSp",
+      "Parch"
+    ]
+  ],
+  "add_missing_indicators": true,
+  "log_target": false
+}
