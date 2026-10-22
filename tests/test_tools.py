@@ -278,3 +278,18 @@ def test_group_override_never_reads_a_validation_or_own_label():
     one[5] = 1 - one[5]  # a training row's own label must not change its own verdict
     own2 = _unanimous(tg, one, tr, [g.train[tr] for g in tg], 1, own=one[tr])
     assert own[5] == own2[5]
+
+
+def test_group_override_with_shuffled_labels_stays_at_the_majority_rate():
+    # category ordering and group verdicts both use labels: with labels that carry no signal, CV must not rise
+    rng = np.random.default_rng(1)
+    n = 600
+    train = pd.DataFrame({"id": range(n), "cat": rng.choice(list("abcdefgh"), n), "x": rng.normal(size=n),
+                          "key": [f"k{i // 3}" for i in range(n)], "y": rng.integers(0, 2, n)})
+    test = train.drop(columns="y").assign(id=range(n, 2 * n))
+    plan = FeaturePlan(reasoning="", drop_columns=["key"], group_target_encoding=[{"keys": ["key"], "name": "g"}])
+    fm = build_features(train, test, "y", "id", plan)
+    y = train["y"].to_numpy()
+    scores = [run_cv(fm, rng.permutation(y), "binary", "accuracy", "o", "group_override", {}, 5, s).cv_score
+              for s in range(3)]
+    assert np.mean(scores) < max(y.mean(), 1 - y.mean()) + 0.02

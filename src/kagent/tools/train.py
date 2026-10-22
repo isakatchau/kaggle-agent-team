@@ -74,7 +74,8 @@ PARAM_SPACE: dict[str, dict[str, tuple]] = {
     "group_override": {
         "depth": (int, 1, 3, 1),
         "min_known": (int, 1, 5, 1),
-        "member_purity": (float, 0.5, 1.0, 0.85),
+        "member_purity": (float, 0.5, 1.0, 1.0),
+        "member_min_rate": (float, 0.0, 1.0, 0.0),
         "cell_depth": (int, 1, 3, 2),
     },
 }
@@ -342,6 +343,20 @@ def _unanimous(groups: list[TargetGroups], y: np.ndarray, src: np.ndarray, dst_c
     return np.where(out == -2, -1, out)
 
 
+def _order_categories(X: np.ndarray, X_other: list[np.ndarray], cat_idx: list[int], y: np.ndarray) -> list[np.ndarray]:
+    """Replace category codes by their positive rate on these (training) rows, the ordering under
+    which one threshold gives the best binary split of a categorical for a binary target (CART,
+    Breiman et al. 1984). Arbitrary codes would hide e.g. one title among others. Categories unseen
+    in training get the overall rate."""
+    out = [X.copy()] + [o.copy() for o in X_other]
+    prior = float(y.mean())
+    for j in cat_idx:
+        rates = pd.Series(y).groupby(X[:, j]).mean()
+        for arr in out:
+            arr[:, j] = pd.Series(arr[:, j]).map(rates).fillna(prior).to_numpy()
+    return out
+
+
 def group_override(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, params: dict,
                    folds: int, seed: int, repeats: int = 1) -> ExperimentResult:
     """A shallow tree whose prediction is replaced only where a row's group is unanimous.
@@ -353,7 +368,8 @@ def group_override(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, nam
     wrong with 95% confidence (Wilson lower bound > 0.5). Validation and test rows are judged by their
     training-fold group-mates. With member_purity < 1, only group-mates in tree leaves at most that pure
     count as evidence: a member whose outcome the tree already predicts confidently says little about
-    the group (the public rule counts women and children, not men). Overrides are decided per leaf of a
+    the group (the public rule counts women and children, not men). member_min_rate does the same by
+    outcome: only group-mates in cells whose positive rate is at least that count. Overrides are decided per leaf of a
     second tree of depth cell_depth (>= depth), so a finer cell can be overridden while the base stays simple. This is the shape of the strongest leak-free public Titanic models (a
     gender rule plus a few unanimous-family overrides), expressed without any column name.
     """
@@ -361,21 +377,25 @@ def group_override(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, nam
     t0 = time.time()
     if task != "binary" or not fm.target_groups:
         raise ValueError("group_override needs a binary task and group_target_encoding keys")
-    X = _prepare(fm.X_train, "random_forest", fm.categorical).to_numpy()
-    X_test = _prepare(fm.X_test, "random_forest", fm.categorical).to_numpy()
+    X = _prepare(fm.X_train, "random_forest", fm.categorical).to_numpy(dtype=float)
+    X_test = _prepare(fm.X_test, "random_forest", fm.categorical).to_numpy(dtype=float)
+    cat_idx = [i for i, c in enumerate(fm.X_train.columns) if c in fm.categorical]
     groups = fm.target_groups
     oof, test_pred, fold_scores, n_rules = np.zeros(len(y)), np.zeros(len(X_test)), [], []
     for r in range(repeats):
         for tr, va in StratifiedKFold(folds, shuffle=True, random_state=seed + r).split(X, y):
+            X_tr, X_va, X_te = _order_categories(X[tr], [X[va], X_test], cat_idx, y[tr])  # training labels only
             tree = DecisionTreeClassifier(max_depth=params["depth"], min_samples_leaf=max(5, len(tr) // 100),
-                                          random_state=seed + r).fit(X[tr], y[tr])
-            base_tr, base_leaf = tree.predict(X[tr]), tree.apply(X[tr])
+                                          random_state=seed + r).fit(X_tr, y[tr])
+            base_tr, base_leaf = tree.predict(X_tr), tree.apply(X_tr)
             rate = {leaf: y[tr][base_leaf == leaf].mean() for leaf in np.unique(base_leaf)}
-            member = np.array([max(rate[leaf], 1 - rate[leaf]) <= params["member_purity"] for leaf in base_leaf])
             cells = tree if params["cell_depth"] <= params["depth"] else DecisionTreeClassifier(
                 max_depth=params["cell_depth"], min_samples_leaf=max(5, len(tr) // 100),
-                random_state=seed + r).fit(X[tr], y[tr])
-            leaf_tr = cells.apply(X[tr])
+                random_state=seed + r).fit(X_tr, y[tr])
+            leaf_tr = cells.apply(X_tr)
+            cell_rate = {leaf: y[tr][leaf_tr == leaf].mean() for leaf in np.unique(leaf_tr)}
+            member = np.array([max(rate[b], 1 - rate[b]) <= params["member_purity"]
+                               and cell_rate[c] >= params["member_min_rate"] for b, c in zip(base_leaf, leaf_tr)])
             src = tr[member]
             g_tr = _unanimous(groups, y, src, [g.train[tr] for g in groups], params["min_known"],
                               own=y[tr], own_in=member)
@@ -394,9 +414,9 @@ def group_override(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, nam
                     base = np.where((leaf == leaf_id) & (g == c), c, base)
                 return base.astype(float)
 
-            p_va = predict(X[va], [g.train[va] for g in groups])
+            p_va = predict(X_va, [g.train[va] for g in groups])
             oof[va] += p_va / repeats
-            test_pred += predict(X_test, [g.test for g in groups]) / (folds * repeats)
+            test_pred += predict(X_te, [g.test for g in groups]) / (folds * repeats)
             fold_scores.append(M.score(metric, y[va], p_va))
     return ExperimentResult(
         name=name, model="group_override",

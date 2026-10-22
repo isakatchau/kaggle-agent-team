@@ -30,7 +30,7 @@ from ..tools.features import FeatureMatrix, build_features
 from ..tools.kaggle import Platform, PlatformError, percentile
 from ..tools.profile import compact_profile, load_competition_files, profile
 from ..tools.submission import check_submission, write_submission
-from ..tools.train import PARAM_SPACE, ExperimentResult, blend, run_cv
+from ..tools.train import PARAM_SPACE, ExperimentResult, blend, clip_params, run_cv
 
 
 class GraphState(TypedDict):
@@ -205,13 +205,21 @@ def build_graph(ws: Workspace):
             "group_override_available": ws.group_override_available,
         }
         batch = modeler.decide(ctx)
+        defaults = clip_params("group_override", {})[0]
+
+        def is_default(params: dict) -> bool:
+            return {k: params.get(k) for k in defaults} == defaults
+
         if ws.group_override_available and not any(
-                r.model == "group_override" and r.feature_version == ws.feature_version for r in ws.results) \
-                and not any(e.model == "group_override" for e in batch.experiments):
-            # like the ensemble, the simplest credible model is always a candidate on a new feature set
+                r.model == "group_override" and r.feature_version == ws.feature_version and is_default(r.params)
+                for r in ws.results) \
+                and not any(e.model == "group_override" and is_default(clip_params("group_override", e.params)[0])
+                            for e in batch.experiments):
+            # like the ensemble, the simplest credible model, at its CV-chosen defaults, is always a
+            # candidate on a new feature set (the LLM's own variants run as well)
             batch.experiments.append(Experiment(name=f"it{state['iteration']}_group_override",
                                                 model="group_override"))
-            log.log("modeling", "decision", "added group_override: the simplest candidate on this feature set")
+            log.log("modeling", "decision", "added group_override at its defaults: the simplest candidate")
         for exp in batch.experiments:
             log.log("tools", "tool_call", f"train {exp.name} ({exp.model})", params=exp.params)
             try:

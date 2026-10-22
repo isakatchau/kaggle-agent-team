@@ -34,7 +34,7 @@ class RegexFeature(BaseModel):
 
 class GroupTargetEncoding(BaseModel):
     keys: list[str] = Field(
-        min_length=1, max_length=4,
+        min_length=1, max_length=6,
         description="Columns whose exact combined value defines a group: raw columns or names of regex_features "
                     "(e.g. a surname extracted from a name, a booking code). Rows with a missing key part, or "
                     "whose regex did not match, belong to no group",
