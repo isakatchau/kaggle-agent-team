@@ -29,7 +29,9 @@ from ..observability.events import RunLogger, append_index, read_events
 from ..tools import metrics as M
 from ..tools.features import FeatureMatrix, build_features
 from ..tools.notebooks import load_notebook
-from ..tools.rules import run_rule_cv
+from ..agents.schemas import RuleModel
+from ..tools.memory import load_memory, remember, unique_names
+from ..tools.rules import run_rule_cv, validate_rule
 from ..tools.kaggle import Platform, PlatformError, percentile
 from ..tools.profile import compact_profile, load_competition_files, profile
 from ..tools.submission import check_submission, write_submission
@@ -159,10 +161,8 @@ def build_graph(ws: Workspace):
             ws.y, ws.classes = enc.transform(raw_y), enc.classes_
         return {"iteration": 1, "focus": "features"}
 
-    def research_node(state: GraphState) -> dict:
-        """Read the competition's public notebooks; adopt the rules they describe as candidates."""
-        if cfg.research_notebooks <= 0:
-            return {}
+    def live_research() -> list:
+        """Read the competition's public notebooks; return the valid rules they describe."""
         listing, seen = [], set()
         for sort, n, tag in (("voteCount", 100, "votes"), ("scoreDescending", 30, "score")):
             log.log("tools", "tool_call", f"list notebooks by {sort}")
@@ -172,7 +172,7 @@ def build_graph(ws: Workspace):
                     listing.append({**nb, "list": tag})
         if not listing:
             log.log("tools", "tool_result", "no public notebooks")
-            return {}
+            return []
         columns = [c for c in ws.train.columns if c not in (ws.plan.target, ws.plan.id_column)]
         reading = scout.decide({"competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric,
                                 "target": ws.plan.target, "columns": columns, "listing": listing,
@@ -216,7 +216,7 @@ def build_graph(ws: Workspace):
                 if child is not None:
                     notebooks.append(child)
         if not notebooks:
-            return {}
+            return []
         examples = {c["name"]: c["examples"][:3] for c in ws.profile["columns"] if c["name"] in columns}
         base_ctx = {
             "_data": pd.concat([ws.train.drop(columns=[ws.plan.target]), ws.test], ignore_index=True),
@@ -243,13 +243,33 @@ def build_graph(ws: Workspace):
                 names.add(name)
                 rules.append(r.model_copy(update={"name": name}))
             notes = notes.model_copy(update={"rules": rules[:6], "techniques": notes.techniques + close.techniques})
-        ws.rules = notes.rules
         log.save_json("research.json", {
             "listing": listing, "read": [{"ref": nb.ref, "title": nb.title, "external_reads": nb.external_reads}
                                          for nb in notebooks],
             "techniques": [t.model_dump() for t in notes.techniques],
             "rules": [r.model_dump() for r in notes.rules],
         })
+        return notes.rules
+
+    def research_node(state: GraphState) -> dict:
+        """Rules from earlier research (revalidated) plus whatever this run's research finds."""
+        if ws.plan.task != "binary":
+            return {}
+        path = cfg.runs_dir / cfg.competition / "research_memory.json"
+        columns = [c for c in ws.train.columns if c not in (ws.plan.target, ws.plan.id_column)]
+        data = pd.concat([ws.train.drop(columns=[ws.plan.target]), ws.test], ignore_index=True)
+        remembered = []
+        for entry in load_memory(path):
+            rule = RuleModel.model_validate(entry["rule"])
+            if not validate_rule(rule, columns, data):
+                remembered.append(rule)
+        if remembered:
+            log.log("tools", "tool_result", f"{len(remembered)} rules remembered from earlier research",
+                    rules=[r.name for r in remembered])
+        fresh = live_research() if cfg.research_notebooks > 0 else []
+        if fresh:
+            remember(path, fresh, log.run_id, (ws.research_llm or ws.llm).name if (ws.research_llm or ws.llm) else "")
+        ws.rules = unique_names(remembered + fresh)
         return {}
 
     def data_node(state: GraphState) -> dict:

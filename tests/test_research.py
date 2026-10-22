@@ -162,3 +162,27 @@ def test_research_keeps_valid_rules_from_several_attempts(tmp_path):
     notes = ResearchAgent(llm, logger).decide({"task": "binary", "columns": ["id", "kind", "name"], "_attempts": 3})
     assert [r.base_column for r in notes.rules] == ["kind", "name"] and len(llm.calls) == 3
     assert len({r.name for r in notes.rules}) == 2
+
+
+def test_research_memory_carries_rules_to_later_runs_without_research(tmp_path):
+    train, test = _households(seed=2)
+    root = tmp_path / "hh"
+    root.mkdir()
+    train.to_csv(root / "train.csv", index=False)
+    test.to_csv(root / "test.csv", index=False)
+    test[["id"]].assign(y=0).to_csv(root / "sample_submission.csv", index=False)
+    (root / "_meta.json").write_text(json.dumps({"metric": "accuracy"}))
+    cfg = RunConfig(competition="hh", data_dir=tmp_path, runs_dir=tmp_path / "runs", cv_folds=3, metric="accuracy")
+    cfg.budget.max_iterations = 1
+    cfg.budget.max_experiments_per_iteration = 1
+    llm = ScriptedLLM({"scout": {"reasoning": "r", "read": ["someone/household-rule"]},
+                       "research": {"reasoning": "r", "techniques": [], "rules": [RULE]}})
+    for agent in ("planner", "data", "modeling", "evaluator", "reviewer"):
+        llm.answers[f"the {agent} agent"] = __import__("kagent.llm.base", fromlist=["LLMError"]).LLMError("heuristic")
+    first = RunLogger.create(cfg.runs_dir, cfg.competition, verbose=False)
+    run(Workspace(cfg=cfg, platform=NotebookPlatform(root), logger=first, llm=llm, submit_enabled=False))
+    assert (cfg.runs_dir / "hh" / "research_memory.json").exists()
+    # second run: no LLM and a platform without notebooks; the remembered rule is still a candidate
+    second = RunLogger.create(cfg.runs_dir, cfg.competition, verbose=False)
+    run(Workspace(cfg=cfg, platform=OfflineKaggle(root), logger=second, llm=None, submit_enabled=False))
+    assert "it1_rule_household" in set(pd.read_csv(second.run_dir / "experiments.csv")["name"])
