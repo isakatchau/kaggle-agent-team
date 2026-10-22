@@ -31,7 +31,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 
 from . import metrics as M
-from .features import FeatureMatrix
+from .features import FeatureMatrix, TargetGroups, group_target_encode
 
 # name -> (type, low, high, default)
 PARAM_SPACE: dict[str, dict[str, tuple]] = {
@@ -187,6 +187,19 @@ def _prepare(X: pd.DataFrame, model: str, cat_cols: list[str]) -> pd.DataFrame:
     return X
 
 
+def _add_group_encoding(groups: list[TargetGroups], Y: np.ndarray, tr: np.ndarray, va: np.ndarray,
+                        frames: list[pd.DataFrame], model: str) -> list[pd.DataFrame]:
+    """Append this fold's group target encodings to its (train, validation, test) frames."""
+    encoded = [group_target_encode(g, Y, tr, va) for g in groups]
+    cols = [c for g in groups for c in g.columns(Y.shape[1])]
+    out = []
+    for i, frame in enumerate(frames):
+        enc = pd.DataFrame(np.hstack([e[i] for e in encoded]), columns=cols, index=frame.index)
+        out.append(pd.concat([frame, enc.fillna(-999) if model in ("random_forest", "extra_trees") else enc],
+                             axis=1))
+    return out
+
+
 def _predict(est, X, task):
     if task == "regression":
         return est.predict(X)
@@ -205,7 +218,6 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
     params, notes = clip_params(model, params)
     t0 = time.time()
     cat_cols = fm.categorical
-    num_cols = [c for c in fm.X_train.columns if c not in cat_cols]
     X = _prepare(fm.X_train, model, cat_cols)
     X_test = _prepare(fm.X_test, model, cat_cols)
 
@@ -218,14 +230,23 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
     fold_scores, fitted, importances = [], [], []
     y_fit = np.log1p(y) if (log_target and task == "regression") else y
 
+    # Group target encodings use labels, so they are built per fold from that fold's training rows only.
+    groups = fm.target_groups
+    Y = np.eye(n_classes)[y] if n_classes else np.asarray(y_fit, dtype=float).reshape(-1, 1)
+    columns = list(X.columns) + [c for g in groups for c in g.columns(Y.shape[1])]
+    num_cols = [c for c in columns if c not in cat_cols]
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         for r in range(repeats):
             for tr, va in split_cls(folds, shuffle=True, random_state=seed + r).split(X, y):
+                X_tr, X_va, X_te = X.iloc[tr], X.iloc[va], X_test
+                if groups:
+                    X_tr, X_va, X_te = _add_group_encoding(groups, Y, tr, va, [X_tr, X_va, X_te], model)
                 est = _estimator(model, task, params, cat_cols, num_cols, seed + r)
-                est.fit(X.iloc[tr], y_fit[tr])
-                p_va = _predict(est, X.iloc[va], task)
-                p_te = _predict(est, X_test, task)
+                est.fit(X_tr, y_fit[tr])
+                p_va = _predict(est, X_va, task)
+                p_te = _predict(est, X_te, task)
                 if log_target and task == "regression":
                     p_va, p_te = np.expm1(p_va), np.expm1(p_te)
                 oof[va] += p_va / repeats
@@ -239,12 +260,12 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
     if importances:
         imp = np.mean(importances, axis=0)
         imp = imp / (imp.sum() or 1)
-        importance = dict(sorted(zip(X.columns, imp.round(4).tolist()), key=lambda kv: -kv[1])[:25])
+        importance = dict(sorted(zip(columns, imp.round(4).tolist()), key=lambda kv: -kv[1])[:25])
 
     ckpt = None
     if checkpoint_dir is not None:
         ckpt = str(checkpoint_dir / f"{name}.joblib")
-        joblib.dump({"models": fitted, "columns": list(X.columns), "params": params,
+        joblib.dump({"models": fitted, "columns": columns, "params": params,
                      "log_target": log_target}, ckpt, compress=3)
 
     return ExperimentResult(

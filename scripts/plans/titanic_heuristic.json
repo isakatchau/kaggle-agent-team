@@ -1,0 +1,37 @@
+{
+  "reasoning": "High-cardinality text ['Name', 'Ticket']: keep length and leading token, drop raw. Dates [] -> year/month/weekday. Frequency-encode ['Cabin']. log1p skewed ['SibSp', 'Parch', 'Fare']. Group target encoding on codes that repeat and reappear in test ['Ticket', 'Cabin']. log_target=False.",
+  "drop_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "log_transform_columns": [
+    "SibSp",
+    "Parch",
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Cabin"
+  ],
+  "text_length_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": "^\\s*([A-Za-z]+)",
+      "name": "Name_prefix"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^\\s*([A-Za-z]+)",
+      "name": "Ticket_prefix"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [],
+  "group_target_encoding": [],
+  "add_missing_indicators": true,
+  "log_target": false
+}

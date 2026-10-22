@@ -1,0 +1,62 @@
+{
+  "reasoning": "LLM plan v1 + group target encoding: ticket split into adult men vs women and children (woman-child-group idea)",
+  "drop_columns": [
+    "Name",
+    "Ticket",
+    "Cabin",
+    "AdultMale"
+  ],
+  "log_transform_columns": [
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Ticket",
+    "Cabin",
+    "Embarked"
+  ],
+  "text_length_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": ",\\s*([^\\.]+)\\.",
+      "name": "Title"
+    },
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Za-z])",
+      "name": "Deck"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^([A-Za-z\\.\\/]+)",
+      "name": "TicketPrefix"
+    },
+    {
+      "column": "Name",
+      "pattern": ",\\s*(Mr(?=\\.)|)",
+      "name": "AdultMale"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [
+    [
+      "SibSp",
+      "Parch"
+    ]
+  ],
+  "add_missing_indicators": true,
+  "log_target": false,
+  "group_target_encoding": [
+    {
+      "keys": [
+        "Ticket",
+        "AdultMale"
+      ],
+      "name": "gte_ticket"
+    }
+  ]
+}
