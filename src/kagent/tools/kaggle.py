@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import subprocess
 import sys
 import time
@@ -35,6 +36,8 @@ class Platform(Protocol):
     def evaluation_text(self, competition: str) -> str: ...
     def submit(self, competition: str, file: Path, message: str) -> float | None: ...
     def leaderboard_scores(self, competition: str, workdir: Path) -> list[float]: ...
+    def notebook_list(self, competition: str, sort: str, n: int, search: str | None = None) -> list[dict]: ...
+    def notebook_pull(self, ref: str, dest: Path) -> Path | None: ...
 
 
 def percentile(score: float, board: list[float], metric: str, tol: float = 1e-5) -> float | None:
@@ -63,7 +66,8 @@ class KaggleCLI:
     def _run(self, *args: str, check: bool = True) -> str:
         # current interpreter: works without an activated venv; kaggle_entry trusts the OS certificate store
         cmd = [sys.executable, "-m", "kagent.tools.kaggle_entry", *args]
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"})  # notebook titles are unicode
         if check and proc.returncode != 0:
             msg = (proc.stderr or proc.stdout).strip()
             if "403" in msg or "rules" in msg.lower():
@@ -121,6 +125,31 @@ class KaggleCLI:
         value = pd.to_numeric(df.iloc[0][col], errors="coerce")
         return None if pd.isna(value) else float(value)
 
+    def notebook_list(self, competition: str, sort: str, n: int, search: str | None = None) -> list[dict]:
+        """Public notebooks of the competition: [{ref, title, votes}]."""
+        args = ["kernels", "list", "--competition", competition, "--sort-by", sort, "--page-size", str(n), "--csv"]
+        if search:
+            args += ["-s", search]
+        try:
+            out = self._run(*args)
+        except PlatformError:
+            return []
+        try:
+            df = pd.read_csv(io.StringIO(out))
+        except Exception:
+            return []
+        return [{"ref": r.ref, "title": str(r.title), "votes": int(r.totalVotes)} for r in df.itertuples()
+                if isinstance(r.ref, str)]
+
+    def notebook_pull(self, ref: str, dest: Path) -> Path | None:
+        """Download a notebook's source (never run it)."""
+        dest.mkdir(parents=True, exist_ok=True)
+        try:
+            self._run("kernels", "pull", ref, "-p", str(dest))
+        except PlatformError:
+            return None
+        return dest
+
     def leaderboard_scores(self, competition: str, workdir: Path) -> list[float]:
         workdir.mkdir(parents=True, exist_ok=True)
         try:
@@ -175,6 +204,12 @@ class OfflineKaggle:
         with (self.root / "_submissions.csv").open("a") as f:
             f.write(f"{time.time():.0f},{file.name},{score:.6f},{message!r}\n")
         return score
+
+    def notebook_list(self, competition: str, sort: str, n: int, search: str | None = None) -> list[dict]:
+        return []  # a local competition has no public notebooks
+
+    def notebook_pull(self, ref: str, dest: Path) -> Path | None:
+        return None
 
     def leaderboard_scores(self, competition: str, workdir: Path) -> list[float]:
         board = self.root / "_leaderboard.csv"

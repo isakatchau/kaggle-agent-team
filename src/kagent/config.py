@@ -40,6 +40,8 @@ class RunConfig(BaseModel):
     id_column: str | None = None
     target_percentile: float = Field(0.20, gt=0, le=1)
     cv_folds: int = Field(5, ge=2, le=10)
+    research_notebooks: int = Field(
+        8, ge=0, le=12, description="Public notebooks the Research agent may read (0 disables research)")
     cv_repeats: int | None = Field(
         None, ge=1, le=5,
         description="Repeated CV with new shuffles. None = 3 below 5,000 train rows (where one split is "

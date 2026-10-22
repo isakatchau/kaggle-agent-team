@@ -81,6 +81,54 @@ class FeaturePlan(BaseModel):
     log_target: bool = False
 
 
+class Condition(BaseModel):
+    column: str = Field(description="Raw column or a name from `derive`")
+    op: Literal["==", "!=", "in", "not_in", "<", "<=", ">", ">=", "isna", "notna"]
+    value: str | float | int | list[str | float | int] | None = None
+
+
+class GroupOverride(BaseModel):
+    when: list[Condition] = Field(description="All must hold for a row to be overridden")
+    group_keys: list[str] = Field(min_length=1, max_length=6,
+                                  description="Columns whose exact combined value defines a group")
+    members_when: list[list[Condition]] = Field(
+        default=[], description="Which rows count as group members: OR of AND-lists; empty = every row")
+    min_group_size: int = Field(2, ge=2, le=20, description="Members over train+test for a group to count")
+    if_all: int = Field(description="Outcome every other labelled member must have had (0 or 1)")
+    set_to: int = Field(description="Prediction for the overridden rows (0 or 1)")
+
+
+class RuleModel(BaseModel):
+    name: str
+    derive: list[RegexFeature] = Field(default=[], description="Columns extracted from raw text first")
+    base_column: str = Field(description="Predict the training majority class of each value of this column")
+    overrides: list[GroupOverride] = []
+    source: str = Field("", description="Notebook the rule comes from")
+    reported_public_score: float | None = Field(None, description="Public score the source reports")
+
+
+class Technique(BaseModel):
+    name: str
+    summary: str = Field(description="What it does, in one or two sentences")
+    reported_public_score: float | None = Field(None, description="Public score the notebook reports, if any")
+    source: str = Field(description="Notebook ref (owner/slug)")
+
+
+class ReadingList(BaseModel):
+    reasoning: str
+    read: list[str] = Field(default=[], max_length=8, description="Notebook refs (owner/slug) to read, from the listing")
+    search_terms: list[str] = Field(default=[], max_length=3,
+                                    description="Extra searches among this competition's notebooks")
+
+
+class ResearchNotes(BaseModel):
+    reasoning: str
+    techniques: list[Technique] = []
+    rules: list[RuleModel] = Field(default=[], max_length=4,
+                                   description="Techniques that are rules over columns, written in this schema; "
+                                               "they are cross-validated like any model")
+
+
 class Experiment(BaseModel):
     name: str
     model: ModelName

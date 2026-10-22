@@ -20,13 +20,16 @@ import pandas as pd
 from langgraph.graph import END, START, StateGraph
 from sklearn.preprocessing import LabelEncoder
 
-from ..agents import DataAgent, EvaluatorAgent, LeaderboardReviewerAgent, ModelingAgent, PlannerAgent
+from ..agents import (DataAgent, EvaluatorAgent, LeaderboardReviewerAgent, ModelingAgent, NotebookScoutAgent,
+                      PlannerAgent, ResearchAgent)
 from ..agents.schemas import CompetitionPlan, Experiment, FeaturePlan
 from ..config import RunConfig
 from ..llm.base import LLMClient
 from ..observability.events import RunLogger, append_index, read_events
 from ..tools import metrics as M
 from ..tools.features import FeatureMatrix, build_features
+from ..tools.notebooks import load_notebook
+from ..tools.rules import run_rule_cv
 from ..tools.kaggle import Platform, PlatformError, percentile
 from ..tools.profile import compact_profile, load_competition_files, profile
 from ..tools.submission import check_submission, write_submission
@@ -56,6 +59,8 @@ class Workspace:
     feature_plan: FeaturePlan | None = None
     features: FeatureMatrix | None = None
     selected: ExperimentResult | None = None  # the Evaluator's last pick (submitted or saved)
+    rules: list = field(default_factory=list)  # RuleModels adopted by the Research agent
+    data_dir: Path | None = None
     feature_version: int = 0
     y: np.ndarray | None = None
     classes: np.ndarray | None = None
@@ -124,11 +129,14 @@ def build_graph(ws: Workspace):
     modeler = ModelingAgent(ws.llm, log)
     evaluator = EvaluatorAgent(ws.llm, log)
     reviewer = LeaderboardReviewerAgent(ws.llm, log)
+    scout = NotebookScoutAgent(ws.llm, log)
+    researcher = ResearchAgent(ws.llm, log)
     cfg = ws.cfg
 
     def plan_node(state: GraphState) -> dict:
         log.log("tools", "tool_call", f"download {cfg.competition}")
         data_dir = ws.platform.download(cfg.competition, cfg.data_dir / cfg.competition)
+        ws.data_dir = data_dir
         ws.train, ws.test, ws.sample = load_competition_files(data_dir)
         if cfg.sample_rows and len(ws.train) > cfg.sample_rows:
             ws.train = ws.train.sample(cfg.sample_rows, random_state=cfg.seed).reset_index(drop=True)
@@ -149,6 +157,62 @@ def build_graph(ws: Workspace):
             enc = LabelEncoder().fit(raw_y)
             ws.y, ws.classes = enc.transform(raw_y), enc.classes_
         return {"iteration": 1, "focus": "features"}
+
+    def research_node(state: GraphState) -> dict:
+        """Read the competition's public notebooks; adopt the rules they describe as candidates."""
+        if cfg.research_notebooks <= 0:
+            return {}
+        listing, seen = [], set()
+        for sort, n, tag in (("voteCount", 20, "votes"), ("scoreDescending", 30, "score")):
+            log.log("tools", "tool_call", f"list notebooks by {sort}")
+            for nb in ws.platform.notebook_list(cfg.competition, sort, n):
+                if nb["ref"] not in seen:
+                    seen.add(nb["ref"])
+                    listing.append({**nb, "list": tag})
+        if not listing:
+            log.log("tools", "tool_result", "no public notebooks")
+            return {}
+        columns = [c for c in ws.train.columns if c not in (ws.plan.target, ws.plan.id_column)]
+        reading = scout.decide({"competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric,
+                                "target": ws.plan.target, "columns": columns, "listing": listing,
+                                "max_read": cfg.research_notebooks})
+        refs = list(reading.read)
+        for term in reading.search_terms:
+            log.log("tools", "tool_call", f"search notebooks: {term}")
+            for nb in ws.platform.notebook_list(cfg.competition, "voteCount", 5, search=term)[:2]:
+                if nb["ref"] not in seen:
+                    seen.add(nb["ref"])
+                    listing.append({**nb, "list": f"search:{term}"})
+                if nb["ref"] not in refs:
+                    refs.append(nb["ref"])
+        meta = {n["ref"]: n for n in listing}
+        files = [p.name for p in ws.data_dir.glob("*.csv") if not p.name.startswith("_")]
+        notebooks = []
+        for ref in refs[: cfg.research_notebooks + 4]:
+            dest = ws.platform.notebook_pull(ref, cfg.data_dir / cfg.competition / "_notebooks" / ref.replace("/", "__"))
+            nb = load_notebook(dest, ref, cfg.competition, files, meta[ref]["title"], meta[ref]["votes"]) if dest else None
+            if nb is None:
+                log.log("tools", "error", f"could not read notebook {ref}")
+                continue
+            notebooks.append(nb)
+            log.log("tools", "tool_result", f"read {ref}" + (f" (external data: {nb.external_reads[:2]})" if nb.leaks else ""))
+        if not notebooks:
+            return {}
+        examples = {c["name"]: c["examples"][:3] for c in ws.profile["columns"] if c["name"] in columns}
+        notes = researcher.decide({
+            "competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric, "target": ws.plan.target,
+            "classes": [str(c) for c in ws.classes] if ws.classes is not None else None,
+            "columns": columns, "column_examples": examples,
+            "notebooks": [nb.for_prompt() | {"external_reads": nb.external_reads} for nb in notebooks],
+        })
+        ws.rules = notes.rules
+        log.save_json("research.json", {
+            "listing": listing, "read": [{"ref": nb.ref, "title": nb.title, "external_reads": nb.external_reads}
+                                         for nb in notebooks],
+            "techniques": [t.model_dump() for t in notes.techniques],
+            "rules": [r.model_dump() for r in notes.rules],
+        })
+        return {}
 
     def data_node(state: GraphState) -> dict:
         log.iteration = state["iteration"]
@@ -225,6 +289,21 @@ def build_graph(ws: Workspace):
                 name += "_"
             batch.experiments.append(Experiment(name=name, model="group_override"))
             log.log("modeling", "decision", "added group_override at its defaults: the simplest candidate")
+        for rule in ws.rules:
+            if any(r.model == "rule" and r.params.get("name") == rule.name for r in ws.results):
+                continue
+            name = f"it{state['iteration']}_rule_{rule.name}"[:60]
+            log.log("tools", "tool_call", f"cross-validate rule {rule.name} from {rule.source or 'research'}")
+            try:
+                res = run_rule_cv(rule, ws.train.drop(columns=[ws.plan.target]), ws.test, ws.y, ws.metric, name,
+                                  cfg.cv_folds, cfg.seed, repeats=ws.cv_repeats)
+            except Exception as exc:  # a rule that cannot run must not end the run
+                log.log("tools", "error", f"rule {rule.name} failed: {exc}")
+                continue
+            res.iteration, res.feature_version = state["iteration"], ws.feature_version
+            ws.results.append(res)
+            log.log("tools", "tool_result", f"{name} cv={res.cv_score:.5f} (rule, complexity {res.complexity:.0f})",
+                    result=res.summary())
         for exp in batch.experiments:
             log.log("tools", "tool_call", f"train {exp.name} ({exp.model})", params=exp.params)
             try:
@@ -390,11 +469,13 @@ def build_graph(ws: Workspace):
         return "data" if state["focus"] == "features" else "modeling"
 
     g = StateGraph(GraphState)
-    for name, fn in [("planner", plan_node), ("data", data_node), ("modeling", modeling_node),
+    for name, fn in [("planner", plan_node), ("research", research_node), ("data", data_node),
+                     ("modeling", modeling_node),
                      ("evaluator", evaluator_node), ("reviewer", reviewer_node), ("finalize", finalize_node)]:
         g.add_node(name, fn)
     g.add_edge(START, "planner")
-    g.add_edge("planner", "data")
+    g.add_edge("planner", "research")
+    g.add_edge("research", "data")
     g.add_edge("data", "modeling")
     g.add_edge("modeling", "evaluator")
     g.add_edge("evaluator", "reviewer")
