@@ -205,3 +205,14 @@ def test_repeated_cv_scores_every_fold_of_every_repeat(binary_comp):
     r = run_cv(fm, y, "binary", "accuracy", "lin", "linear", {}, 3, 0, repeats=2)
     assert len(r.fold_scores) == 6 and r.oof.min() >= 0 and r.oof.max() <= 1
     assert r.summary()["cv_lcb"] == round(r.cv_score - r.cv_se, 6)
+
+
+def test_group_target_encoding_output_names_cannot_collide_with_generated_columns():
+    # an LLM answer like this passed validation, then every LightGBM fit failed on a duplicate feature name
+    plan = FeaturePlan(reasoning="", frequency_encode_columns=["booking"],
+                       group_target_encoding=[{"keys": ["booking"], "name": "booking_freq"},
+                                              {"keys": ["booking"], "name": "grp"},
+                                              {"keys": ["booking"], "name": "grp_n"}])
+    clean, issues = validate_plan(plan, ["booking", "x"], ["x"])
+    assert [g.name for g in clean.group_target_encoding] == ["grp"]
+    assert len(issues) == 2

@@ -76,14 +76,27 @@ def validate_plan(plan: FeaturePlan, columns: list[str], numeric: list[str]) -> 
         (regex.append(r) if ok else issues.append(f"regex_features: invalid '{r.name}'"))
 
     derived = cols | {r.name for r in regex}
-    encodings, names = [], set()
+    # every column build_features can create: an encoding's outputs must not collide with any of them,
+    # or every model fails later on duplicate feature names while build_features itself succeeds
+    produced = {_safe(c) for c in derived | {f"{c}_isna" for c in derived}
+                | {f"{c}_len" for c in plan.text_length_columns}
+                | {f"{c}_{p}" for c in plan.datetime_columns for p in ("year", "month", "dow")}
+                | {f"{c}_freq" for c in plan.frequency_encode_columns}
+                | {"size_" + "_".join(g) for g in plan.group_size_columns}
+                | {f"{a}_per_{b}" for a, b in plan.ratio_features}}
+
+    def outputs(name: str) -> set[str]:
+        return {name, f"{name}_n", f"{name}_size"} | {f"{name}_{j}" for j in range(32)}  # _j: multiclass
+
+    encodings = []
     for g in plan.group_target_encoding:
         name = _safe(g.name)
-        if all(k in derived for k in g.keys) and name not in derived and name not in names:
-            names.add(name)
+        if all(k in derived for k in g.keys) and not outputs(name) & produced:
+            produced |= outputs(name)
             encodings.append(g.model_copy(update={"name": name}))
         else:
-            issues.append(f"group_target_encoding: invalid '{g.name}' (unknown key or name already used)")
+            issues.append(f"group_target_encoding: invalid '{g.name}' (unknown key, or its output columns "
+                          "collide with another feature)")
 
     ratios = [tuple(p) for p in plan.ratio_features if p[0] in num and p[1] in num and p[0] != p[1]]
     issues += [f"ratio_features: invalid pair {p}" for p in plan.ratio_features if tuple(p) not in ratios]
