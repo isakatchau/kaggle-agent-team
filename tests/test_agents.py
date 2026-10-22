@@ -62,22 +62,22 @@ def test_llm_outage_falls_back(planner_ctx, logger):
 
 def test_evaluator_cannot_exceed_budget(logger):
     llm = ScriptedLLM({"evaluator": {"reasoning": "yolo", "submit": True, "candidate": "a"}})
-    ctx = {"metric": "roc_auc", "candidates": [{"name": "a", "cv_score": 0.9, "cv_std": 0.01, "cv_lcb": 0.897}],
+    ctx = {"metric": "roc_auc", "candidates": [{"name": "a", "cv_score": 0.9, "cv_std": 0.01, "cv_lcb": 0.897, "cv_se1": 0.0045, "complexity": 100}],
            "best_submitted": None, "submissions_left": 0, "min_improvement": 0.001}
     assert EvaluatorAgent(llm, logger).decide(ctx).submit is False
 
 
 def test_evaluator_requires_cv_improvement(logger):
     llm = ScriptedLLM({"evaluator": {"reasoning": "r", "submit": True, "candidate": "a"}})
-    ctx = {"metric": "rmse", "candidates": [{"name": "a", "cv_score": 0.30, "cv_std": 0.01, "cv_lcb": 0.303}],
+    ctx = {"metric": "rmse", "candidates": [{"name": "a", "cv_score": 0.30, "cv_std": 0.01, "cv_lcb": 0.303, "cv_se1": 0.0045, "complexity": 100}],
            "best_submitted": {"cv_score": 0.2999}, "submissions_left": 2, "min_improvement": 0.001}
     assert EvaluatorAgent(llm, logger).decide(ctx).submit is False
 
 
 def test_evaluator_gates_on_the_pessimistic_bound(logger):
     # Titanic run 1: an ensemble 0.2 points above the submitted CV but with the widest fold spread
-    noisy = {"name": "ens", "cv_score": 0.8395, "cv_std": 0.0287, "cv_lcb": 0.8267}
-    steady = {"name": "lgbm", "cv_score": 0.8390, "cv_std": 0.0120, "cv_lcb": 0.8359}
+    noisy = {"name": "ens", "cv_score": 0.8395, "cv_std": 0.0287, "cv_lcb": 0.8267, "cv_se1": 0.0128, "complexity": 13000}
+    steady = {"name": "lgbm", "cv_score": 0.8390, "cv_std": 0.0120, "cv_lcb": 0.8359, "cv_se1": 0.0054, "complexity": 6400}
     ctx = {"metric": "accuracy", "candidates": [noisy, steady], "best_submitted": {"cv_score": 0.8373},
            "submissions_left": 2, "min_improvement": 0.0005}
     llm = ScriptedLLM({"evaluator": {"reasoning": "r", "submit": True, "candidate": "ens"}})
@@ -106,6 +106,23 @@ def test_reviewer_cannot_stop_after_a_single_round_below_target(logger):
     assert review.continue_ and review.next_focus == "models"
     ctx["rounds"].append({"focus": "models", "best_cv_gain": 0.0})  # two rounds: a plateau may be real
     assert LeaderboardReviewerAgent(llm, logger).decide(ctx).next_focus == "stop"
+
+
+def test_evaluator_prefers_the_simplest_statistically_tied_candidate(logger):
+    # Titanic diagnostic: a rule with 16 overrides had the CV of the best boosted model (0.8417 vs 0.8418)
+    boosted = {"name": "hgb", "cv_score": 0.8418, "cv_std": 0.0185, "cv_lcb": 0.8370, "cv_se1": 0.0083,
+               "complexity": 12000}
+    rule = {"name": "override", "cv_score": 0.8380, "cv_std": 0.0150, "cv_lcb": 0.8341, "cv_se1": 0.0067,
+            "complexity": 4}
+    worse = {"name": "linear", "cv_score": 0.8150, "cv_std": 0.0120, "cv_lcb": 0.8119, "cv_se1": 0.0054,
+             "complexity": 20}
+    ctx = {"metric": "accuracy", "candidates": [boosted, rule, worse], "best_submitted": None,
+           "submissions_left": 3, "min_improvement": 0.0005}
+    assert EvaluatorAgent(None, logger).decide(ctx).candidate == "override"
+    llm = ScriptedLLM({"evaluator": {"reasoning": "r", "submit": True, "candidate": "hgb"}})
+    assert EvaluatorAgent(llm, logger).decide(ctx).candidate == "override"  # tied: the guard picks the simpler
+    rule["cv_score"] = 0.8300  # now more than one standard error behind: the better CV wins
+    assert EvaluatorAgent(llm, logger).decide(ctx).candidate == "hgb"
 
 
 def test_reviewer_stops_at_target(logger):

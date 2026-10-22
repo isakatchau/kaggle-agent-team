@@ -11,7 +11,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 Task = Literal["binary", "multiclass", "regression"]
-ModelName = Literal["lightgbm", "hist_gb", "random_forest", "extra_trees", "linear"]
+ModelName = Literal["lightgbm", "hist_gb", "random_forest", "extra_trees", "linear", "group_override"]
 SubmissionFormat = Literal["label", "proba", "multi_proba", "top3"]
 
 

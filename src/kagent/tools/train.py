@@ -29,6 +29,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
+from sklearn.tree import DecisionTreeClassifier
 
 from . import metrics as M
 from .features import FeatureMatrix, TargetGroups, group_target_encode
@@ -69,6 +70,13 @@ PARAM_SPACE: dict[str, dict[str, tuple]] = {
         "C": (float, 0.001, 100.0, 1.0),
         "alpha": (float, 0.001, 1000.0, 1.0),
     },
+    # A shallow tree, overridden only where a row's group is unanimous (see group_override).
+    "group_override": {
+        "depth": (int, 1, 3, 1),
+        "min_known": (int, 1, 5, 1),
+        "member_purity": (float, 0.5, 1.0, 0.85),
+        "cell_depth": (int, 1, 3, 2),
+    },
 }
 
 
@@ -107,6 +115,8 @@ class ExperimentResult:
     notes: list[str] = field(default_factory=list)
     checkpoint: str | None = None
     metric: str = ""
+    repeats: int = 1
+    complexity: float = 0.0
 
     @property
     def cv_se(self) -> float:
@@ -117,6 +127,12 @@ class ExperimentResult:
     def cv_lcb(self) -> float:
         sign = 1 if M.GREATER_IS_BETTER.get(self.metric, True) else -1
         return self.cv_score - sign * self.cv_se
+
+    @property
+    def cv_se1(self) -> float:
+        """Textbook standard error for the one-standard-error rule: fold std / sqrt(folds per repeat)."""
+        per_repeat = max(len(self.fold_scores) // max(self.repeats, 1), 1)
+        return float(np.std(self.fold_scores) / np.sqrt(per_repeat))
 
     def summary(self) -> dict:
         return {
@@ -129,6 +145,9 @@ class ExperimentResult:
             "cv_se": round(self.cv_se, 6),
             # pessimistic bound, one standard error towards "worse": what the submit gate compares
             "cv_lcb": round(self.cv_lcb, 6),
+            "cv_se1": round(self.cv_se1, 6),
+            # rough count of fitted decisions; the Evaluator prefers the simplest of statistically tied candidates
+            "complexity": round(self.complexity, 1),
             "seconds": round(self.seconds, 1),
             "params": self.params,
             "notes": self.notes,
@@ -215,6 +234,8 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
     With repeats, every row gets one OOF prediction per repeat and they are averaged, as are
     the test predictions of all folds x repeats models. fold_scores has folds x repeats entries.
     """
+    if model == "group_override":
+        return group_override(fm, y, task, metric, name, params, folds, seed, repeats)
     params, notes = clip_params(model, params)
     t0 = time.time()
     cat_cols = fm.categorical
@@ -272,6 +293,117 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
         name=name, model=model, params=params, cv_score=M.score(metric, y, oof),
         fold_scores=fold_scores, oof=oof, test_pred=test_pred, seconds=time.time() - t0,
         feature_importance=importance, notes=notes, checkpoint=ckpt, metric=metric,
+        repeats=repeats, complexity=model_complexity(model, params, len(columns)),
+    )
+
+
+def model_complexity(model: str, params: dict, n_features: int) -> float:
+    """Rough number of fitted decisions, comparable across families only in order of magnitude."""
+    p = params
+    if model == "lightgbm":
+        leaves = p["num_leaves"] if p["max_depth"] <= 0 else min(p["num_leaves"], 2 ** p["max_depth"])
+        return float(leaves * p["n_estimators"])
+    if model == "hist_gb":
+        return float(p["max_leaf_nodes"] * p["max_iter"])
+    if model in ("random_forest", "extra_trees"):
+        return float(p["n_estimators"] * 2 ** min(p["max_depth"], 12))
+    if model == "linear":
+        return float(n_features)
+    return 0.0
+
+
+def _wilson_lower(correct: int, n: int, z: float = 1.96) -> float:
+    if n == 0:
+        return 0.0
+    phat = correct / n
+    return (phat + z * z / (2 * n) - z * np.sqrt(phat * (1 - phat) / n + z * z / (4 * n * n))) / (1 + z * z / n)
+
+
+def _unanimous(groups: list[TargetGroups], y: np.ndarray, src: np.ndarray, dst_codes: list[np.ndarray],
+               min_known: int, own: np.ndarray | None = None, own_in: np.ndarray | None = None) -> np.ndarray:
+    """Per destination row: the outcome shared by all (>= min_known) labelled *other* members of its
+    groups, or -1. Only y[src] is read; with `own`, destination rows are training rows and each row's
+    own label is taken back out where `own_in` says the row itself is among the sources. Groups that
+    disagree with each other give -1."""
+    out = np.full(len(dst_codes[0]), -2)  # -2 = no evidence yet
+    for tg, dst in zip(groups, dst_codes):
+        codes, ok = tg.train[src], tg.train[src] >= 0
+        n_g = max(tg.n_groups, 1)
+        cnt = np.bincount(codes[ok], minlength=n_g).astype(float)
+        pos = np.bincount(codes[ok], weights=y[src][ok].astype(float), minlength=n_g)
+        has = dst >= 0
+        idx = np.where(has, dst, 0)
+        n, s = np.where(has, cnt[idx], 0.0), np.where(has, pos[idx], 0.0)
+        if own is not None:
+            mine = has & (own_in if own_in is not None else True)
+            n, s = n - mine, s - own * mine
+        verdict = np.where((n >= min_known) & (s == 0), 0, np.where((n >= min_known) & (s == n), 1, -2))
+        out = np.where(out == -2, verdict, np.where((verdict != -2) & (verdict != out), -1, out))
+    return np.where(out == -2, -1, out)
+
+
+def group_override(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, params: dict,
+                   folds: int, seed: int, repeats: int = 1) -> ExperimentResult:
+    """A shallow tree whose prediction is replaced only where a row's group is unanimous.
+
+    Binary tasks with a label metric. Groups come from the plan's group_target_encoding keys. In each
+    fold: fit a depth-1..3 tree on the training rows; for every (leaf, outcome) cell, the override "set
+    rows of this leaf whose other group members all had this outcome to it" is accepted only if, on the
+    training rows (each judged by its group-mates without its own label), it is right more often than
+    wrong with 95% confidence (Wilson lower bound > 0.5). Validation and test rows are judged by their
+    training-fold group-mates. With member_purity < 1, only group-mates in tree leaves at most that pure
+    count as evidence: a member whose outcome the tree already predicts confidently says little about
+    the group (the public rule counts women and children, not men). Overrides are decided per leaf of a
+    second tree of depth cell_depth (>= depth), so a finer cell can be overridden while the base stays simple. This is the shape of the strongest leak-free public Titanic models (a
+    gender rule plus a few unanimous-family overrides), expressed without any column name.
+    """
+    params, notes = clip_params("group_override", params)
+    t0 = time.time()
+    if task != "binary" or not fm.target_groups:
+        raise ValueError("group_override needs a binary task and group_target_encoding keys")
+    X = _prepare(fm.X_train, "random_forest", fm.categorical).to_numpy()
+    X_test = _prepare(fm.X_test, "random_forest", fm.categorical).to_numpy()
+    groups = fm.target_groups
+    oof, test_pred, fold_scores, n_rules = np.zeros(len(y)), np.zeros(len(X_test)), [], []
+    for r in range(repeats):
+        for tr, va in StratifiedKFold(folds, shuffle=True, random_state=seed + r).split(X, y):
+            tree = DecisionTreeClassifier(max_depth=params["depth"], min_samples_leaf=max(5, len(tr) // 100),
+                                          random_state=seed + r).fit(X[tr], y[tr])
+            base_tr, base_leaf = tree.predict(X[tr]), tree.apply(X[tr])
+            rate = {leaf: y[tr][base_leaf == leaf].mean() for leaf in np.unique(base_leaf)}
+            member = np.array([max(rate[leaf], 1 - rate[leaf]) <= params["member_purity"] for leaf in base_leaf])
+            cells = tree if params["cell_depth"] <= params["depth"] else DecisionTreeClassifier(
+                max_depth=params["cell_depth"], min_samples_leaf=max(5, len(tr) // 100),
+                random_state=seed + r).fit(X[tr], y[tr])
+            leaf_tr = cells.apply(X[tr])
+            src = tr[member]
+            g_tr = _unanimous(groups, y, src, [g.train[tr] for g in groups], params["min_known"],
+                              own=y[tr], own_in=member)
+            accepted = set()
+            for leaf in np.unique(leaf_tr):
+                for c in (0, 1):
+                    cell = (leaf_tr == leaf) & (g_tr == c) & (base_tr != c)
+                    if cell.sum() >= 3 and _wilson_lower(int((y[tr][cell] == c).sum()), int(cell.sum())) > 0.5:
+                        accepted.add((int(leaf), c))
+            n_rules.append(len(accepted))
+
+            def predict(rows_X, codes):
+                base, leaf = tree.predict(rows_X), cells.apply(rows_X)
+                g = _unanimous(groups, y, src, codes, params["min_known"])
+                for leaf_id, c in accepted:
+                    base = np.where((leaf == leaf_id) & (g == c), c, base)
+                return base.astype(float)
+
+            p_va = predict(X[va], [g.train[va] for g in groups])
+            oof[va] += p_va / repeats
+            test_pred += predict(X_test, [g.test for g in groups]) / (folds * repeats)
+            fold_scores.append(M.score(metric, y[va], p_va))
+    return ExperimentResult(
+        name=name, model="group_override",
+        params={**params, "mean_accepted_rules": round(float(np.mean(n_rules)), 2)},
+        cv_score=M.score(metric, y, oof), fold_scores=fold_scores, oof=oof, test_pred=test_pred,
+        seconds=time.time() - t0, notes=notes, metric=metric, repeats=repeats,
+        complexity=float(2 ** params["depth"] + np.mean(n_rules)),  # cell tree only routes overrides
     )
 
 
@@ -327,4 +459,5 @@ def blend(results: list[ExperimentResult], y: np.ndarray, metric: str, name: str
         params={"weights": named, "in_sample_cv": round(M.score(metric, y, oof), 6)},
         cv_score=M.score(metric, y, nested), fold_scores=fold_scores,
         oof=oof, test_pred=mix(weights, [r.test_pred for r in results]), seconds=0.0, metric=metric,
+        complexity=float(sum(results[i].complexity for i in weights)),
     )

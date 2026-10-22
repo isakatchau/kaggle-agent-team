@@ -30,6 +30,7 @@ PANEL = {
     "hist_gb": {},
     "random_forest": {"n_estimators": 500, "max_depth": 7, "min_samples_leaf": 2},
     "linear": {},
+    "group_override": {"depth": 1},  # needs group_target_encoding keys in the plan
 }
 
 
@@ -62,12 +63,14 @@ def main() -> None:
     out, results = {"metric": plan.metric, "n_features": fm.n_features, "features": list(fm.X_train.columns),
                     "models": {}}, []
     for model in args.models.split(","):
+        if model == "group_override" and not fm.target_groups:
+            continue
         t0 = time.time()
         r = run_cv(fm, y, plan.task, plan.metric, model, model, PANEL.get(model, {}), args.folds, args.seed,
                    fplan.log_target, None, repeats=args.repeats)
         results.append(r)
         s = r.summary()
-        out["models"][model] = {k: s[k] for k in ("cv_score", "cv_std", "cv_lcb")} | {"seconds": round(time.time() - t0, 1)}
+        out["models"][model] = {k: s[k] for k in ("cv_score", "cv_std", "cv_lcb", "cv_se1", "complexity")} | {"seconds": round(time.time() - t0, 1)}
     ens = blend(results, y, plan.metric, "ensemble")
     s = ens.summary()
     out["models"]["ensemble"] = {k: s[k] for k in ("cv_score", "cv_std", "cv_lcb")} | {"weights": ens.params["weights"]}

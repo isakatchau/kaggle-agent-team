@@ -229,3 +229,52 @@ def test_group_target_encoding_skips_category_keys_with_big_groups():
     fm = build_features(train, test, "y", "id", plan)
     assert [t.name for t in fm.target_groups] == ["bk_grp"]
     assert len(fm.skipped) == 1 and "cat" in fm.skipped[0] and "cat_grp_size" not in fm.X_train
+
+
+def _households(seed: int, shuffle_keys: bool = False):
+    # members of a household share the outcome; a weak row feature explains a little of it
+    rng = np.random.default_rng(seed)
+    hh = np.repeat(np.arange(300), 3)
+    fate = rng.integers(0, 2, 300)[hh]
+    x = fate + rng.normal(0, 1.5, len(hh))
+    y = np.where(rng.random(len(hh)) < 0.9, fate, 1 - fate)
+    key = np.array([f"h{h}" for h in hh])
+    if shuffle_keys:
+        key = rng.permutation(key)
+    df = pd.DataFrame({"id": range(len(hh)), "x": x, "key": key, "y": y})
+    train, test = df.iloc[:600].reset_index(drop=True), df.iloc[600:].drop(columns="y").reset_index(drop=True)
+    plan = FeaturePlan(reasoning="", drop_columns=["key"], group_target_encoding=[{"keys": ["key"], "name": "hh"}])
+    return build_features(train, test, "y", "id", plan), train["y"].to_numpy()
+
+
+def test_group_override_uses_unanimous_groups_and_ignores_shuffled_keys():
+    gains, noise = [], []
+    for seed in range(3):
+        fm, y = _households(seed)
+        stump = run_cv(fm, y, "binary", "accuracy", "s", "group_override", {"depth": 1, "min_known": 99}, 5, 0)
+        over = run_cv(fm, y, "binary", "accuracy", "o", "group_override", {"depth": 1}, 5, 0)
+        fm_n, y_n = _households(seed, shuffle_keys=True)
+        stump_n = run_cv(fm_n, y_n, "binary", "accuracy", "s", "group_override", {"depth": 1, "min_known": 99}, 5, 0)
+        over_n = run_cv(fm_n, y_n, "binary", "accuracy", "o", "group_override", {"depth": 1}, 5, 0)
+        gains.append(over.cv_score - stump.cv_score)
+        noise.append(over_n.cv_score - stump_n.cv_score)
+    assert np.mean(gains) > 0.05
+    assert abs(np.mean(noise)) < 0.01
+
+
+def test_group_override_never_reads_a_validation_or_own_label():
+    from kagent.tools.train import _unanimous
+
+    fm, y = _households(0)
+    tg = fm.target_groups
+    tr, va = np.arange(0, 480), np.arange(480, 600)
+    flipped = y.copy()
+    flipped[va] = 1 - flipped[va]
+    a = _unanimous(tg, y, tr, [g.train[va] for g in tg], 1)
+    b = _unanimous(tg, flipped, tr, [g.train[va] for g in tg], 1)
+    assert (a == b).all()
+    own = _unanimous(tg, y, tr, [g.train[tr] for g in tg], 1, own=y[tr])
+    one = y.copy()
+    one[5] = 1 - one[5]  # a training row's own label must not change its own verdict
+    own2 = _unanimous(tg, one, tr, [g.train[tr] for g in tg], 1, own=one[tr])
+    assert own[5] == own2[5]

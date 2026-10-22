@@ -21,7 +21,7 @@ from langgraph.graph import END, START, StateGraph
 from sklearn.preprocessing import LabelEncoder
 
 from ..agents import DataAgent, EvaluatorAgent, LeaderboardReviewerAgent, ModelingAgent, PlannerAgent
-from ..agents.schemas import CompetitionPlan, FeaturePlan
+from ..agents.schemas import CompetitionPlan, Experiment, FeaturePlan
 from ..config import RunConfig
 from ..llm.base import LLMClient
 from ..observability.events import RunLogger, append_index, read_events
@@ -68,6 +68,11 @@ class Workspace:
     @property
     def metric(self) -> str:
         return self.plan.metric
+
+    @property
+    def group_override_available(self) -> bool:
+        return (self.plan.task == "binary" and self.metric in ("accuracy", "f1")
+                and bool(self.features is not None and self.features.target_groups))
 
     @property
     def cv_repeats(self) -> int:
@@ -197,8 +202,16 @@ def build_graph(ws: Workspace):
             "history": history[-20:], "feature_version": ws.feature_version,
             "max_experiments": cfg.budget.max_experiments_per_iteration,
             "reviewer_suggestions": ws.suggestions,
+            "group_override_available": ws.group_override_available,
         }
         batch = modeler.decide(ctx)
+        if ws.group_override_available and not any(
+                r.model == "group_override" and r.feature_version == ws.feature_version for r in ws.results) \
+                and not any(e.model == "group_override" for e in batch.experiments):
+            # like the ensemble, the simplest credible model is always a candidate on a new feature set
+            batch.experiments.append(Experiment(name=f"it{state['iteration']}_group_override",
+                                                model="group_override"))
+            log.log("modeling", "decision", "added group_override: the simplest candidate on this feature set")
         for exp in batch.experiments:
             log.log("tools", "tool_call", f"train {exp.name} ({exp.model})", params=exp.params)
             try:
@@ -237,7 +250,11 @@ def build_graph(ws: Workspace):
 
     def evaluator_node(state: GraphState) -> dict:
         log.iteration = state["iteration"]
-        top = sorted(ws.results, key=ws.sort_key)[:8]
+        ranked = sorted(ws.results, key=ws.sort_key)
+        lead = ranked[0]
+        # the top 8 plus every candidate statistically tied with the best, so the simplest is never cut
+        tied = [r for r in ranked[8:] if -ws.sort_key(r) >= -ws.sort_key(lead) - lead.cv_se1]
+        top = ranked[:8] + tied
         prev = ws.best_submission()
         ctx = {
             "metric": ws.metric, "greater_is_better": M.GREATER_IS_BETTER[ws.metric],

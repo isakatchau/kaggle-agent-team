@@ -17,7 +17,12 @@ class ModelingAgent(Agent[ExperimentBatch]):
         "history to avoid repeating configurations, to tune around what worked, and to add diverse "
         "models that make a useful ensemble. Small datasets need stronger regularisation (fewer "
         "leaves, more min samples, lower learning rate). Set ensemble_top_k >= 2 to run greedy "
-        "ensemble selection over the best 2*k experiments (0 disables it)."
+        "ensemble selection over the best 2*k experiments (0 disables it). When "
+        "`group_override_available` is true, `group_override` is a deliberately simple model: a depth-1..3 "
+        "tree whose prediction is changed only for rows whose group (the plan's group_target_encoding "
+        "keys) unanimously had the other outcome, and only where that held reliably on training rows. "
+        "Its CV is often tied with boosted trees while it makes far fewer decisions; the Evaluator "
+        "prefers the simplest of statistically tied candidates."
     )
 
     def heuristic(self, ctx: dict) -> ExperimentBatch:
@@ -26,14 +31,18 @@ class ModelingAgent(Agent[ExperimentBatch]):
         small = n_rows < 3000
         leaves = 15 if small else 31
         tried = {e["model"] for e in ctx["history"]}
+        override = ctx.get("group_override_available", False)
 
         if it == 1 or focus == "features":
             exps = [Experiment(name="lgbm_base", model="lightgbm",
                                params={"num_leaves": leaves, "min_child_samples": 20 if not small else 10})]
-            exps += [Experiment(name=f"{m}_base", model=m) for m in ctx["candidate_models"] if m != "lightgbm"]
+            exps += [Experiment(name=f"{m}_base", model=m) for m in ctx["candidate_models"]
+                     if m not in ("lightgbm", "group_override")]
+            if override:
+                exps.insert(1, Experiment(name="group_override", model="group_override"))
             why = "First round on this feature set: one default per candidate family to compare."
         elif focus == "models":
-            fresh = [m for m in PARAM_SPACE if m not in tried]
+            fresh = [m for m in PARAM_SPACE if m not in tried and (override or m != "group_override")]
             exps = [Experiment(name=f"{m}_base", model=m) for m in fresh]
             exps.append(Experiment(name="lgbm_reg", model="lightgbm",
                                    params={"num_leaves": max(7, leaves // 2), "min_child_samples": 40,
@@ -59,6 +68,9 @@ class ModelingAgent(Agent[ExperimentBatch]):
         done = {(e["model"], json.dumps(e["params"], sort_keys=True), e["feature_version"])
                 for e in ctx["history"]}
         for e in d.experiments:
+            if e.model == "group_override" and not ctx.get("group_override_available", False):
+                notes.append(f"skipped {e.name}: group_override needs a binary label metric and group keys")
+                continue
             if ctx["n_rows"] > 200_000 and e.model in ("random_forest", "extra_trees"):
                 notes.append(f"skipped {e.name}: forests are too slow above 200k rows")
                 continue
