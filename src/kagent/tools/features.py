@@ -16,6 +16,15 @@ import pandas as pd
 from ..agents.schemas import FeaturePlan
 
 
+# Group target encoding is for small groups of related rows (a ticket, a booking, a household). On a
+# category with big groups, "mean of the other members" takes exactly one value per class inside each
+# group, so a model that can also see the category reads every training row's label back and learns a
+# rule that does not exist at test time (Titanic: ticket prefix and cabin letter, mean group sizes 12
+# and 42, dropped LightGBM CV from 0.847 to 0.827 and the public score to 311/418). Categories already
+# have their own treatment; keys whose repeated groups are larger than this on average are skipped.
+MAX_MEAN_GROUP_SIZE = 10
+
+
 def _safe(name: str) -> str:
     return re.sub(r"[^0-9a-zA-Z_]", "_", str(name))
 
@@ -129,12 +138,18 @@ def build_features(train: pd.DataFrame, test: pd.DataFrame, target: str, id_colu
         full[r.name] = full[r.column].astype(str).str.extract(r.pattern, expand=False)
         applied.append(f"regex {r.column} -> {r.name}")
 
-    target_groups = []
+    target_groups, skipped = [], []
     for g in plan.group_target_encoding:
         parts = full[g.keys].astype("string")
         key = parts.fillna("").agg("|".join, axis=1).where(parts.notna().all(axis=1))
         codes = pd.Series(pd.factorize(key)[0])  # missing key -> -1
         size = codes.map(codes[codes >= 0].value_counts()).fillna(1)
+        repeated = codes[codes >= 0].value_counts()
+        mean_size = float(repeated[repeated >= 2].mean()) if (repeated >= 2).any() else 0.0
+        if mean_size > MAX_MEAN_GROUP_SIZE:
+            skipped.append(f"group target encoding {g.keys}: mean group size {mean_size:.0f} > "
+                           f"{MAX_MEAN_GROUP_SIZE}, a category rather than groups of related rows")
+            continue
         codes = codes.where(size >= g.min_group_size, -1).to_numpy()
         name = _safe(g.name)
         full[f"{name}_size"] = size.to_numpy(dtype=float)
@@ -199,6 +214,7 @@ def build_features(train: pd.DataFrame, test: pd.DataFrame, target: str, id_colu
         X_test=full.iloc[n_train:].reset_index(drop=True),
         categorical=categorical,
         applied=applied,
+        skipped=skipped,
         target_groups=target_groups,
     )
 

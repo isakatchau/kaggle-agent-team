@@ -72,7 +72,10 @@ class FeaturePlan(BaseModel):
                     "train+test. Computed inside every CV fold from training rows only, so a row's own label "
                     "never enters its own value. Use it when an identifier-like column, or part of one, repeats "
                     "across rows, is shared between train and test (profile test_seen_pct), and group members "
-                    "plausibly share the outcome. Key columns stay in the feature set unless listed in drop_columns",
+                    "plausibly share the outcome. Keys must form SMALL groups of related rows (a full ticket or "
+                    "booking code, a surname): a category such as a code prefix, a letter or a class is not a "
+                    "group, and keys whose repeated groups average more than 10 rows are skipped. Key columns "
+                    "stay in the feature set unless listed in drop_columns",
     )
     add_missing_indicators: bool = True
     log_target: bool = False

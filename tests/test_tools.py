@@ -216,3 +216,16 @@ def test_group_target_encoding_output_names_cannot_collide_with_generated_column
     clean, issues = validate_plan(plan, ["booking", "x"], ["x"])
     assert [g.name for g in clean.group_target_encoding] == ["grp"]
     assert len(issues) == 2
+
+
+def test_group_target_encoding_skips_category_keys_with_big_groups():
+    # a 3-value category is not a group of related rows: LOO means inside it encode each row's label
+    rng = np.random.default_rng(0)
+    train = pd.DataFrame({"id": range(200), "cat": rng.choice(list("abc"), 200),
+                          "booking": [f"b{i // 2}" for i in range(200)], "y": rng.integers(0, 2, 200)})
+    test = train.drop(columns="y").assign(id=range(200, 400))
+    plan = FeaturePlan(reasoning="", group_target_encoding=[{"keys": ["cat"], "name": "cat_grp"},
+                                                            {"keys": ["booking"], "name": "bk_grp"}])
+    fm = build_features(train, test, "y", "id", plan)
+    assert [t.name for t in fm.target_groups] == ["bk_grp"]
+    assert len(fm.skipped) == 1 and "cat" in fm.skipped[0] and "cat_grp_size" not in fm.X_train

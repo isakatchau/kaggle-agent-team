@@ -167,6 +167,18 @@ def build_graph(ws: Workspace):
             ws.feature_plan = data_agent.heuristic(ctx)
             ws.features = build_features(ws.train, ws.test, ws.plan.target, ws.plan.id_column, ws.feature_plan)
             log.log("data", "fallback", "using the heuristic feature plan")
+        for note in ws.features.skipped:
+            log.log("tools", "error", note)
+        if ws.feature_plan.group_target_encoding and not ws.features.target_groups:
+            # every proposed group encoding was rejected (e.g. category keys): use the heuristic's keys,
+            # the same way an unknown candidate falls back to the heuristic choice
+            keys = data_agent.heuristic(ctx).group_target_encoding
+            if keys:
+                ws.feature_plan = ws.feature_plan.model_copy(update={"group_target_encoding": keys})
+                ws.features = build_features(ws.train, ws.test, ws.plan.target, ws.plan.id_column,
+                                             ws.feature_plan)
+                log.log("data", "fallback", f"group target encoding keys replaced by the heuristic's: "
+                        f"{[g.keys for g in keys]}")
         ws.feature_version += 1
         log.save_json(f"feature_plan_v{ws.feature_version}.json", ws.feature_plan)
         log.log("tools", "tool_result", f"{ws.features.n_features} features (v{ws.feature_version})",
