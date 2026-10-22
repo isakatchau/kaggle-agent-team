@@ -21,6 +21,8 @@ def test_percentile_respects_direction():
     board = [0.1, 0.2, 0.3, 0.4]
     assert percentile(0.35, board, "roc_auc") == 2 / 5   # one team ahead
     assert percentile(0.15, board, "rmse") == 2 / 5
+    # a new submission lands behind teams already at its score (board truncated to 5 decimals)
+    assert percentile(328 / 418, [0.8, 0.78468, 0.78468, 0.7], "accuracy") == 4 / 5
 
 
 def test_clip_params_bounds_and_unknowns():

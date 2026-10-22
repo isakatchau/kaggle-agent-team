@@ -37,12 +37,18 @@ class Platform(Protocol):
     def leaderboard_scores(self, competition: str, workdir: Path) -> list[float]: ...
 
 
-def percentile(score: float, board: list[float], metric: str) -> float | None:
-    """Fraction of the leaderboard at or ahead of `score` (0.05 = top 5%)."""
+def percentile(score: float, board: list[float], metric: str, tol: float = 1e-5) -> float | None:
+    """Position of a new submission with `score` as a fraction of the leaderboard (0.05 = top 5%).
+
+    Kaggle ranks equal scores by who reached them first, so a new submission lands behind every team
+    already at its score: ties count as ahead. The downloaded board truncates scores to 5 decimals,
+    hence the tolerance. (Counting only strictly better teams put Titanic's 327/418 at 22.2% instead
+    of the 27.4% the leaderboard shows.)"""
     if not board:
         return None
     arr = np.asarray(board, dtype=float)
-    ahead = (arr > score).sum() if M.GREATER_IS_BETTER[metric] else (arr < score).sum()
+    better = arr > score + tol if M.GREATER_IS_BETTER[metric] else arr < score - tol
+    ahead = (better | (np.abs(arr - score) <= tol)).sum()
     return float((ahead + 1) / (len(arr) + 1))
 
 
