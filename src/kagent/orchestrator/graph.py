@@ -188,23 +188,33 @@ def build_graph(ws: Workspace):
                     refs.append(nb["ref"])
         meta = {n["ref"]: n for n in listing}
         files = [p.name for p in ws.data_dir.glob("*.csv") if not p.name.startswith("_")]
-        notebooks, queue, followed = [], refs[: cfg.research_notebooks + 4], 0
-        while queue:
-            ref = queue.pop(0)
+        def read(ref: str):
             dest = ws.platform.notebook_pull(ref, cfg.data_dir / cfg.competition / "_notebooks" / ref.replace("/", "__"))
             info = meta.get(ref, {"title": "", "votes": 0})
             nb = load_notebook(dest, ref, cfg.competition, files, info["title"], info["votes"]) if dest else None
             if nb is None:
                 log.log("tools", "error", f"could not read notebook {ref}")
+            else:
+                log.log("tools", "tool_result", f"read {ref}" + (f" (external data: {nb.external_reads[:2]})" if nb.leaks else ""))
+            return nb
+
+        notebooks, followed, seen_refs = [], 0, set(refs)
+        for ref in refs[: cfg.research_notebooks + 4]:
+            nb = read(ref)
+            if nb is None:
                 continue
             notebooks.append(nb)
-            log.log("tools", "tool_result", f"read {ref}" + (f" (external data: {nb.external_reads[:2]})" if nb.leaks else ""))
-            for link in nb.linked_notebooks():  # follow references, as a reader clicks through them
-                if followed < 3 and link not in refs and link not in queue:
-                    refs.append(link)
-                    queue.append(link)
-                    followed += 1
-                    log.log("tools", "tool_call", f"follow reference {link} from {ref}")
+            # follow up to two of its references, as a reader clicks through them; each goes right after the
+            # notebook that cites it, so it stays within the reading budget next to its context
+            for link in [x for x in nb.linked_notebooks() if x not in seen_refs][:2]:
+                if followed >= 8:
+                    break
+                seen_refs.add(link)
+                followed += 1
+                log.log("tools", "tool_call", f"follow reference {link} from {ref}")
+                child = read(link)
+                if child is not None:
+                    notebooks.append(child)
         if not notebooks:
             return {}
         examples = {c["name"]: c["examples"][:3] for c in ws.profile["columns"] if c["name"] in columns}
@@ -214,7 +224,7 @@ def build_graph(ws: Workspace):
             "competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric, "target": ws.plan.target,
             "classes": [str(c) for c in ws.classes] if ws.classes is not None else None,
             "columns": columns, "column_examples": examples,
-            "notebooks": [nb.for_prompt() | {"external_reads": nb.external_reads} for nb in notebooks[:8]],
+            "notebooks": [nb.for_prompt(1100) | {"external_reads": nb.external_reads} for nb in notebooks[:13]],
         })
         ws.rules = notes.rules
         log.save_json("research.json", {
