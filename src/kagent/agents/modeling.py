@@ -21,8 +21,8 @@ class ModelingAgent(Agent[ExperimentBatch]):
         "`group_override_available` is true, `group_override` is a deliberately simple model: a depth-1..3 "
         "tree whose prediction is changed only for rows whose group (the plan's group_target_encoding "
         "keys) unanimously had the other outcome, and only where that held reliably on training rows. "
-        "Its CV is often tied with boosted trees while it makes far fewer decisions; the Evaluator "
-        "prefers the simplest of statistically tied candidates."
+        "It makes a few decisions; the Evaluator's hard rule prefers the simplest candidate the best "
+        "one does not significantly beat."
     )
 
     def heuristic(self, ctx: dict) -> ExperimentBatch:
@@ -65,8 +65,10 @@ class ModelingAgent(Agent[ExperimentBatch]):
 
     def guard(self, d: ExperimentBatch, ctx: dict) -> tuple[ExperimentBatch, list[str]]:
         notes, seen, keep = [], set(), []
-        done = {(e["model"], json.dumps(e["params"], sort_keys=True), e["feature_version"])
-                for e in ctx["history"]}
+        def known(e: dict) -> dict:  # drop result-only keys such as mean_accepted_rules
+            return clip_params(e["model"], e["params"])[0] if e["model"] in PARAM_SPACE else e["params"]
+
+        done = {(e["model"], json.dumps(known(e), sort_keys=True), e["feature_version"]) for e in ctx["history"]}
         for e in d.experiments:
             if e.model == "group_override" and not ctx.get("group_override_available", False):
                 notes.append(f"skipped {e.name}: group_override needs a binary label metric and group keys")
@@ -81,7 +83,10 @@ class ModelingAgent(Agent[ExperimentBatch]):
                 continue
             seen.add(sig)
             base = re.sub(r"^(it\d+_)+", "", e.name)  # LLMs often echo the prefix they saw in history
-            keep.append(e.model_copy(update={"name": f"it{ctx['iteration']}_{base}"[:60]}))
+            name = f"it{ctx['iteration']}_{base}"[:60]
+            while name in {k.name for k in keep}:
+                name += "_"
+            keep.append(e.model_copy(update={"name": name}))
         if len(keep) > ctx["max_experiments"]:
             notes.append(f"trimmed batch to {ctx['max_experiments']}")
             keep = keep[: ctx["max_experiments"]]

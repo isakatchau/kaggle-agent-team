@@ -40,8 +40,7 @@ class EvaluatorAgent(Agent[SubmitDecision]):
         "Choose which candidate (single experiment or ensemble) is the most trustworthy for the "
         "hidden test set and decide whether it deserves one of the limited daily submissions. Weigh "
         "the CV score against its uncertainty and the CV-to-leaderboard gap seen in past submissions. "
-        "`cv_lcb` is the CV moved one standard error towards worse: rank candidates by it, since a "
-        "higher CV with a wide fold spread is often a lucky split. Ensemble CV is nested (weights "
+        "`cv_lcb` is the CV moved one standard error towards worse. Ensemble CV is nested (weights "
         "chosen on other folds), so it is comparable to single-model CV; `params.in_sample_cv` minus "
         "`cv_score` is how much choosing the weights on the scored rows would have inflated it. "
         "`complexity` counts a candidate's fitted decisions; `p_best_better` is a paired test (same "
@@ -78,8 +77,10 @@ class EvaluatorAgent(Agent[SubmitDecision]):
             replace = chosen["name"] != simple["name"] and (
                 chosen["complexity"] > simple["complexity"] or chosen["p_best_better"] < SIGNIFICANCE)
         else:
-            replace = (chosen["name"] != simple["name"] and chosen["complexity"] > simple["complexity"]
-                       and sign * (chosen["cv_score"] - simple["cv_score"]) <= chosen["cv_se1"])
+            lead = max(ctx["candidates"], key=lambda c: sign * c["cv_score"])
+            replace = chosen["name"] != simple["name"] and (
+                chosen["complexity"] > simple["complexity"]
+                or sign * (lead["cv_score"] - chosen["cv_score"]) > lead["cv_se1"])
         if replace:
             notes.append(f"simplest-not-beaten rule: {d.candidate} (complexity {chosen['complexity']:.0f}) "
                          f"replaced by {simple['name']} (complexity {simple['complexity']:.0f})")

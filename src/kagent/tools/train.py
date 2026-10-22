@@ -363,15 +363,18 @@ def _unanimous(groups: list[TargetGroups], y: np.ndarray, src: np.ndarray, dst_c
     return np.where(out == -2, -1, out)
 
 
-def _order_categories(X: np.ndarray, X_other: list[np.ndarray], cat_idx: list[int], y: np.ndarray) -> list[np.ndarray]:
+def _order_categories(X: np.ndarray, X_other: list[np.ndarray], cat_idx: list[int], y: np.ndarray,
+                      min_count: int) -> list[np.ndarray]:
     """Replace category codes by their positive rate on these (training) rows, the ordering under
     which one threshold gives the best binary split of a categorical for a binary target (CART,
     Breiman et al. 1984). Arbitrary codes would hide e.g. one title among others. Categories unseen
-    in training get the overall rate."""
+    in training, or with fewer than min_count training rows, get the overall rate: a rare level's rate
+    is mostly its own rows' labels, which would let the tree read them back."""
     out = [X.copy()] + [o.copy() for o in X_other]
     prior = float(y.mean())
     for j in cat_idx:
-        rates = pd.Series(y).groupby(X[:, j]).mean()
+        stats = pd.Series(y).groupby(X[:, j]).agg(["mean", "size"])
+        rates = stats["mean"].where(stats["size"] >= min_count)
         for arr in out:
             arr[:, j] = pd.Series(arr[:, j]).map(rates).fillna(prior).to_numpy()
     return out
@@ -404,8 +407,9 @@ def group_override(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, nam
     oof, test_pred, fold_scores, n_rules = np.zeros(len(y)), np.zeros(len(X_test)), [], []
     for r in range(repeats):
         for tr, va in StratifiedKFold(folds, shuffle=True, random_state=seed + r).split(X, y):
-            X_tr, X_va, X_te = _order_categories(X[tr], [X[va], X_test], cat_idx, y[tr])  # training labels only
-            tree = DecisionTreeClassifier(max_depth=params["depth"], min_samples_leaf=max(5, len(tr) // 100),
+            leaf_min = max(5, len(tr) // 100)
+            X_tr, X_va, X_te = _order_categories(X[tr], [X[va], X_test], cat_idx, y[tr], leaf_min)  # training labels only
+            tree = DecisionTreeClassifier(max_depth=params["depth"], min_samples_leaf=leaf_min,
                                           random_state=seed + r).fit(X_tr, y[tr])
             base_tr, base_leaf = tree.predict(X_tr), tree.apply(X_tr)
             rate = {leaf: y[tr][base_leaf == leaf].mean() for leaf in np.unique(base_leaf)}
@@ -467,7 +471,7 @@ def _greedy(oofs: list[np.ndarray], y: np.ndarray, metric: str, max_steps: int) 
 
 
 def blend(results: list[ExperimentResult], y: np.ndarray, metric: str, name: str,
-          max_steps: int = 20, folds: int = 5, seed: int = 0) -> ExperimentResult:
+          max_steps: int = 20, folds: int = 5, seed: int = 0, top_n: int | None = None) -> ExperimentResult:
     """Greedy forward ensemble selection with replacement (Caruana et al., 2004).
 
     Starts from the best member and repeatedly adds whichever one most improves the
@@ -477,9 +481,21 @@ def blend(results: list[ExperimentResult], y: np.ndarray, metric: str, name: str
     Scoring the ensemble on the rows its weights were chosen on overstates it, most on
     small data with a discrete metric (Titanic accuracy: 0.846 in-sample vs 0.840 nested).
     So the reported CV is nested: weights are re-selected on k-1 folds of the OOF
-    rows and scored on the held-out fold. The in-sample number is kept in params.
+    rows and scored on the held-out fold. The in-sample number is kept in params. With top_n, the
+    pool (the top_n members by score) is also chosen inside each fold: choosing it on all rows let the
+    held-out fold pick the pool and inflated the nested CV by about half a point on Titanic.
     """
     oofs = [r.oof for r in results]
+    sign = 1 if M.GREATER_IS_BETTER[metric] else -1
+
+    def pool(rows: np.ndarray) -> list[int]:
+        order = sorted(range(len(oofs)), key=lambda i: -sign * M.score(metric, y[rows], oofs[i][rows]))
+        return order[: top_n or len(oofs)]
+
+    def greedy_on(rows: np.ndarray) -> dict[int, float]:
+        members = pool(rows)
+        w = _greedy([oofs[i][rows] for i in members], y[rows], metric, max_steps)
+        return {members[i]: wt for i, wt in w.items()}
 
     def mix(weights: dict[int, float], preds: list[np.ndarray]) -> np.ndarray:
         return sum(preds[i] * w for i, w in weights.items())
@@ -487,11 +503,11 @@ def blend(results: list[ExperimentResult], y: np.ndarray, metric: str, name: str
     nested = np.zeros_like(oofs[0], dtype=float)
     fold_scores = []
     for tr, va in KFold(folds, shuffle=True, random_state=seed).split(oofs[0]):
-        w = _greedy([o[tr] for o in oofs], y[tr], metric, max_steps)
+        w = greedy_on(tr)
         nested[va] = mix(w, oofs)[va]
         fold_scores.append(M.score(metric, y[va], nested[va]))
 
-    weights = _greedy(oofs, y, metric, max_steps)
+    weights = greedy_on(np.arange(len(y)))
     in_sample = mix(weights, oofs)
     named = {results[i].name: round(w, 3) for i, w in weights.items()}
     return ExperimentResult(

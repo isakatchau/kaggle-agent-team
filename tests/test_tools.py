@@ -247,14 +247,23 @@ def _households(seed: int, shuffle_keys: bool = False):
     return build_features(train, test, "y", "id", plan), train["y"].to_numpy()
 
 
+def _no_groups(fm):
+    # the same matrix with every row outside any group: group_override reduces to its tree
+    import dataclasses
+    from kagent.tools.features import TargetGroups
+
+    empty = [TargetGroups(g.name, np.full_like(g.train, -1), np.full_like(g.test, -1)) for g in fm.target_groups]
+    return dataclasses.replace(fm, target_groups=empty)
+
+
 def test_group_override_uses_unanimous_groups_and_ignores_shuffled_keys():
     gains, noise = [], []
     for seed in range(3):
         fm, y = _households(seed)
-        stump = run_cv(fm, y, "binary", "accuracy", "s", "group_override", {"depth": 1, "min_known": 99}, 5, 0)
+        stump = run_cv(_no_groups(fm), y, "binary", "accuracy", "s", "group_override", {"depth": 1}, 5, 0)
         over = run_cv(fm, y, "binary", "accuracy", "o", "group_override", {"depth": 1}, 5, 0)
         fm_n, y_n = _households(seed, shuffle_keys=True)
-        stump_n = run_cv(fm_n, y_n, "binary", "accuracy", "s", "group_override", {"depth": 1, "min_known": 99}, 5, 0)
+        stump_n = run_cv(_no_groups(fm_n), y_n, "binary", "accuracy", "s", "group_override", {"depth": 1}, 5, 0)
         over_n = run_cv(fm_n, y_n, "binary", "accuracy", "o", "group_override", {"depth": 1}, 5, 0)
         gains.append(over.cv_score - stump.cv_score)
         noise.append(over_n.cv_score - stump_n.cv_score)
@@ -293,3 +302,20 @@ def test_group_override_with_shuffled_labels_stays_at_the_majority_rate():
     scores = [run_cv(fm, rng.permutation(y), "binary", "accuracy", "o", "group_override", {}, 5, s).cv_score
               for s in range(3)]
     assert np.mean(scores) < max(y.mean(), 1 - y.mean()) + 0.02
+
+
+def test_group_override_ignores_rare_category_levels_when_ordering():
+    # a categorical unique per row would hand the tree each row's own label if levels were ranked by
+    # their own rows; rare levels get the prior, so the tree splits on the real feature instead
+    rng = np.random.default_rng(3)
+    n = 500
+    x = rng.integers(0, 2, n)
+    y = np.where(rng.random(n) < 0.85, x, 1 - x)
+    train = pd.DataFrame({"id": range(n), "x": x, "uid": [f"u{i}" for i in range(n)],
+                          "key": [f"k{i // 2}" for i in range(n)], "y": y})
+    test = train.drop(columns="y").assign(id=range(n, 2 * n), uid=[f"t{i}" for i in range(n)])
+    plan = FeaturePlan(reasoning="", drop_columns=["key"], group_target_encoding=[{"keys": ["key"], "name": "g"}])
+    fm = build_features(train, test, "y", "id", plan)
+    fm.categorical.append("uid") if "uid" not in fm.categorical else None
+    r = run_cv(_no_groups(fm), y, "binary", "accuracy", "t", "group_override", {"depth": 1}, 5, 0)
+    assert r.cv_score > 0.8

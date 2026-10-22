@@ -55,6 +55,7 @@ class Workspace:
     plan: CompetitionPlan | None = None
     feature_plan: FeaturePlan | None = None
     features: FeatureMatrix | None = None
+    selected: ExperimentResult | None = None  # the Evaluator's last pick (submitted or saved)
     feature_version: int = 0
     y: np.ndarray | None = None
     classes: np.ndarray | None = None
@@ -218,8 +219,11 @@ def build_graph(ws: Workspace):
                             for e in batch.experiments):
             # like the ensemble, the simplest credible model, at its CV-chosen defaults, is always a
             # candidate on a new feature set (the LLM's own variants run as well)
-            batch.experiments.append(Experiment(name=f"it{state['iteration']}_group_override",
-                                                model="group_override"))
+            taken = {r.name for r in ws.results} | {e.name for e in batch.experiments}
+            name = f"it{state['iteration']}_group_override_default"
+            while name in taken:
+                name += "_"
+            batch.experiments.append(Experiment(name=name, model="group_override"))
             log.log("modeling", "decision", "added group_override at its defaults: the simplest candidate")
         for exp in batch.experiments:
             log.log("tools", "tool_call", f"train {exp.name} ({exp.model})", params=exp.params)
@@ -238,12 +242,17 @@ def build_graph(ws: Workspace):
 
         singles = [r for r in ws.results if r.model != "ensemble"]
         if batch.ensemble_top_k >= 2 and len(singles) >= 2:
-            # Greedy selection over the best 2k single experiments (at least 4).
-            pool = sorted(singles, key=ws.sort_key)[: max(batch.ensemble_top_k * 2, 4)]
-            ens = blend(pool, ws.y, ws.metric, f"it{state['iteration']}_ensemble")
+            # Greedy selection over the best 2k single experiments (at least 4), the pool chosen per fold.
+            ens = blend(singles, ws.y, ws.metric, f"it{state['iteration']}_ensemble",
+                        top_n=max(batch.ensemble_top_k * 2, 4))
             ens.iteration, ens.feature_version = state["iteration"], ws.feature_version
-            ws.results.append(ens)
-            log.log("tools", "tool_result", f"{ens.name} cv={ens.cv_score:.5f}", weights=ens.params["weights"])
+            same = next((r for r in ws.results if r.model == "ensemble"
+                         and r.params["weights"] == ens.params["weights"]), None)
+            if same is not None:  # identical blend: one candidate, not two copies with different CVs
+                log.log("tools", "tool_result", f"{ens.name} has the weights of {same.name}; not added")
+            else:
+                ws.results.append(ens)
+                log.log("tools", "tool_result", f"{ens.name} cv={ens.cv_score:.5f}", weights=ens.params["weights"])
 
         ws.write_experiments()
         best_after = ws.best_result()
@@ -280,6 +289,7 @@ def build_graph(ws: Workspace):
         }
         decision = evaluator.decide(ctx)
         cand = next(r for r in ws.results if r.name == decision.candidate)
+        ws.selected = cand
         path = log.run_dir / "submissions" / f"{cand.name}.csv"
         write_submission(path, ws.sample, ws.test[ws.plan.id_column], cand.test_pred,
                          ws.plan.submission_format, ws.classes, ws.plan.id_column)
@@ -336,12 +346,15 @@ def build_graph(ws: Workspace):
     def prune_checkpoints(best: ExperimentResult | None) -> None:
         if cfg.keep_checkpoints == "all" or best is None:
             return
-        keep = set(best.params.get("weights", {})) if best.model == "ensemble" else {best.name}
+        keep = set()
+        for r in {id(x): x for x in (best, ws.selected) if x is not None}.values():
+            keep |= set(r.params.get("weights", {})) if r.model == "ensemble" else {r.name}
         for f in (log.run_dir / "models").glob("*.joblib"):
             if f.stem not in keep:
                 f.unlink()
         log.save_json("models/best_candidate.json", {"best": best.name, "checkpoints": sorted(keep),
-                                                     "params": best.params})
+                                                     "params": best.params,
+                                                     "selected": ws.selected.name if ws.selected else None})
 
     def finalize_node(state: GraphState) -> dict:
         best = ws.best_result()
@@ -353,6 +366,8 @@ def build_graph(ws: Workspace):
             "metric": ws.metric,
             "iterations": state["iteration"], "experiments": len(ws.results),
             "best_cv": best.cv_score if best else None, "best_experiment": best.name if best else None,
+            "selected_experiment": ws.selected.name if ws.selected else None,
+            "selected_cv": ws.selected.cv_score if ws.selected else None,
             "submissions": len(ws.submissions),
             "best_lb": ws.best_lb(),
             "best_percentile": ws.best_percentile(), "target_percentile": cfg.target_percentile,
