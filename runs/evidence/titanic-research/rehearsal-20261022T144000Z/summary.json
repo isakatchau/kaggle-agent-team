@@ -1,0 +1,20 @@
+{
+  "run_id": "20261022T144000Z",
+  "competition": "titanic",
+  "platform": "kaggle",
+  "llm": "heuristic",
+  "llm_fallbacks": 0,
+  "metric": "accuracy",
+  "iterations": 4,
+  "experiments": 34,
+  "best_cv": 0.8473625140291807,
+  "best_experiment": "it1_lgbm_base",
+  "selected_experiment": "it1_rule_WCG Model",
+  "selected_cv": 0.8406285072951739,
+  "submissions": 0,
+  "best_lb": null,
+  "best_percentile": null,
+  "target_percentile": 0.2,
+  "minutes": 2.4,
+  "run_dir": "runs\\titanic\\20261022T144000Z"
+}

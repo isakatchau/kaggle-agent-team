@@ -1,0 +1,1055 @@
+{
+  "rules": [
+    {
+      "rule": {
+        "name": "WCG Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*\\b(Mr|Mrs|Miss|Master|Dr|Rev|Col|Major|Lady|Countess|Don|Dona|Sir|Jonkheer|Ditleffsen|Capt|Cn|Mlle|Mme|Ms|Mr|Mrs|Miss|Master|Dr|Rev|Col|Major|Lady|Countess|Don|Dona|Sir|Jonkheer|Ditleffsen|Capt|Cn|Mlle|Mme|Ms)\\.",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Sex",
+                "op": "==",
+                "value": "male"
+              },
+              {
+                "column": "Age",
+                "op": "<",
+                "value": 16
+              }
+            ],
+            "group_keys": [
+              "Ticket"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          }
+        ],
+        "source": "cdeotte/titanic-wcg-xgboost-0-84688",
+        "reported_public_score": 0.84688
+      },
+      "found_in": "20261022T131417Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Ticket Majority Vote",
+        "derive": [],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [],
+            "group_keys": [
+              "Ticket"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [],
+            "group_keys": [
+              "Ticket"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "erikbruin/titanic-2nd-degree-families-and-majority-voting",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T131417Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Woman-Child-Group (WCG) Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*\\b(Mr|Mrs|Miss|Master|Dr|Rev|Col|Major|Lady|Countess|Jonkheer|Don|Dona|Sir|Capt|Sir|Don|Dona|Ms|Ms|Ms|Ms)\\.",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Title",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Mr"
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-wcg-xgboost-0-84688",
+        "reported_public_score": 0.83
+      },
+      "found_in": "20261022T131417Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Family Ticket Majority Vote",
+        "derive": [],
+        "base_column": "Ticket",
+        "overrides": [
+          {
+            "when": [],
+            "group_keys": [
+              "Ticket"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          }
+        ],
+        "source": "erikbruin/titanic-2nd-degree-families-and-majority-voting",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T131417Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "WCG Rule (Women and Children First)",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*Master(.*)",
+            "name": "is_boy"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Sex",
+                "op": "==",
+                "value": "male"
+              },
+              {
+                "column": "is_boy",
+                "op": "notna",
+                "value": null
+              }
+            ],
+            "group_keys": [
+              "Sex",
+              "is_boy"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          }
+        ],
+        "source": "cdeotte/titanic-wcg-xgboost-0-84688",
+        "reported_public_score": 0.84688
+      },
+      "found_in": "20261022T131417Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Gender and Age Rule",
+        "derive": [],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Sex",
+                "op": "==",
+                "value": "male"
+              },
+              {
+                "column": "Age",
+                "op": "<",
+                "value": 16
+              }
+            ],
+            "group_keys": [
+              "Sex",
+              "Age"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T132116Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Name-based survival rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*\\s(Mr|Mrs|Miss|Master)\\.",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Mr"
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T132116Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "WCG (Woman-Child-Group) Model",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": "^(.*),.*$",
+            "name": "Surname"
+          },
+          {
+            "column": "Name",
+            "pattern": ",\\s*(\\w+)[.]",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Title",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "not_in",
+                  "value": [
+                    "man"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Mrs"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "not_in",
+                  "value": [
+                    "man"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titantic-mega-model-0-84210",
+        "reported_public_score": 0.8421
+      },
+      "found_in": "20261022T130615Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "WCG Model",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*,(.*)\\..*",
+            "name": "Title"
+          },
+          {
+            "column": "Name",
+            "pattern": "^(.*),.*",
+            "name": "Surname"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Master",
+                    "Mrs",
+                    "Miss"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Master",
+                    "Mrs",
+                    "Miss"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titantic-mega-model-0-84210",
+        "reported_public_score": 0.83
+      },
+      "found_in": "20261022T130800Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "WCG Name Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ",\\s*(\\w+)\\.",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Title",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss",
+                  "Master"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mr",
+                  "Capt",
+                  "Don",
+                  "Major",
+                  "Col",
+                  "Rev",
+                  "Dr",
+                  "Sir",
+                  "Jonkheer"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T130917Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Name-based family survival rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*\\b(Master)\\.",
+            "name": "IsMaster"
+          },
+          {
+            "column": "Name",
+            "pattern": "^(.*),",
+            "name": "Surname"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "IsMaster",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Sex",
+                  "op": "==",
+                  "value": "female"
+                }
+              ],
+              [
+                {
+                  "column": "IsMaster",
+                  "op": "==",
+                  "value": "Master"
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Sex",
+                "op": "==",
+                "value": "female"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Sex",
+                  "op": "==",
+                  "value": "female"
+                }
+              ],
+              [
+                {
+                  "column": "IsMaster",
+                  "op": "==",
+                  "value": "Master"
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T133623Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Name-based Gender and Family Unanimity",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*\\b(Mr|Mrs|Miss|Master|Dr|Rev|Col|Major|Don|Lady|Countess|Jonkheer|Sir|Dona|Mme|Mlle|Ms|Capt|Captain|Lady|Countess|Jonkheer|Sir|Dona|Mme|Mlle|Ms|Capt|Captain)\\.",
+            "name": "Title"
+          },
+          {
+            "column": "Name",
+            "pattern": "^(.*?),.*",
+            "name": "Surname"
+          },
+          {
+            "column": "Ticket",
+            "pattern": "^(.*)$",
+            "name": "GroupId"
+          }
+        ],
+        "base_column": "Title",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "GroupId",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Mrs",
+                    "Miss",
+                    "Master"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "GroupId",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Mrs",
+                    "Miss",
+                    "Master"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T133623Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Gender and Age Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": "\\b(Mr|Mrs|Miss|Master|Dr|Rev|Col|Major|Capt|Jonkheer|Don|Sir|Lady|Countess|Dona|Mme|Mlle|Ms)\\.",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Title"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261022T133623Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Family Survival Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": "^([^,]+),",
+            "name": "Surname"
+          },
+          {
+            "column": "Name",
+            "pattern": "\\b(Mr|Mrs|Miss|Master|Dr|Rev|Col|Major|Capt|Jonkheer|Don|Sir|Lady|Countess|Dona|Mme|Mlle|Ms)\\.",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Master",
+                    "Mrs",
+                    "Miss"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Master",
+                    "Mrs",
+                    "Miss"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titantic-mega-model-0-84210",
+        "reported_public_score": 0.8421
+      },
+      "found_in": "20261022T133623Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Mega Model WCG Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*?\\b(Master|Miss|Mrs|Ms|Mr|Dr|Rev|Col|Major|Capt|Don|Dona|Lady|the Countess|Mlle|Mme|Jonkheer)\\.",
+            "name": "TitleRaw"
+          },
+          {
+            "column": "Name",
+            "pattern": "^(.*?),",
+            "name": "Surname"
+          },
+          {
+            "column": "Ticket",
+            "pattern": "^(.*)[^a-zA-Z0-9]?$",
+            "name": "TicketClean"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "TitleRaw",
+                "op": "in",
+                "value": [
+                  "Master",
+                  "Miss",
+                  "Mrs",
+                  "Ms",
+                  "Lady",
+                  "the Countess",
+                  "Mlle",
+                  "Mme",
+                  "Dona"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "TicketClean",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "TitleRaw",
+                  "op": "in",
+                  "value": [
+                    "Master",
+                    "Miss",
+                    "Mrs",
+                    "Ms",
+                    "Lady",
+                    "the Countess",
+                    "Mlle",
+                    "Mme",
+                    "Dona"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "TitleRaw",
+                "op": "in",
+                "value": [
+                  "Master",
+                  "Miss",
+                  "Mrs",
+                  "Ms",
+                  "Lady",
+                  "the Countess",
+                  "Mlle",
+                  "Mme",
+                  "Dona"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "TicketClean",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "TitleRaw",
+                  "op": "in",
+                  "value": [
+                    "Master",
+                    "Miss",
+                    "Mrs",
+                    "Ms",
+                    "Lady",
+                    "the Countess",
+                    "Mlle",
+                    "Mme",
+                    "Dona"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titantic-mega-model-0-84210",
+        "reported_public_score": 0.8421
+      },
+      "found_in": "20261022T123822Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "WCG Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": "^(.*?),\\s",
+            "name": "Surname"
+          },
+          {
+            "column": "Name",
+            "pattern": ",\\s(.*?)[.]",
+            "name": "Title"
+          }
+        ],
+        "base_column": "Title",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Mrs",
+                    "Miss",
+                    "Master"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket",
+              "Fare",
+              "Embarked"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Mrs",
+                    "Miss",
+                    "Master"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titantic-mega-model-0-84210",
+        "reported_public_score": 0.8421
+      },
+      "found_in": "20261022T130430Z (logged answer)",
+      "model": "qwen/qwen3.8-27b"
+    }
+  ]
+}
