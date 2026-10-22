@@ -65,6 +65,7 @@ class Agent(Generic[T]):
 
     def _ask_llm(self, ctx: dict) -> tuple[T | None, str]:
         system = self.system_prompt()
+        ctx = {k: v for k, v in ctx.items() if not k.startswith("_")}  # "_" keys are for guards, not the prompt
         user = json.dumps(ctx, default=str)
         for attempt in (1, 2):
             try:

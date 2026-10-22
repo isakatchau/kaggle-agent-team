@@ -109,7 +109,7 @@ class RuleModel(BaseModel):
 
 class Technique(BaseModel):
     name: str
-    summary: str = Field(description="What it does, in one or two sentences")
+    summary: str = Field(description="What it does, in at most 20 words")
     reported_public_score: float | None = Field(None, description="Public score the notebook reports, if any")
     source: str = Field(description="Notebook ref (owner/slug)")
 
@@ -122,11 +122,12 @@ class ReadingList(BaseModel):
 
 
 class ResearchNotes(BaseModel):
-    reasoning: str
-    techniques: list[Technique] = []
+    # rules first and short prose: free tiers cap output tokens, and the rules are what the team can use
     rules: list[RuleModel] = Field(default=[], max_length=4,
                                    description="Techniques that are rules over columns, written in this schema; "
                                                "they are cross-validated like any model")
+    techniques: list[Technique] = Field(default=[], max_length=5)
+    reasoning: str = Field(description="At most two sentences")
 
 
 class Experiment(BaseModel):

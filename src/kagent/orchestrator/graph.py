@@ -209,10 +209,12 @@ def build_graph(ws: Workspace):
             return {}
         examples = {c["name"]: c["examples"][:3] for c in ws.profile["columns"] if c["name"] in columns}
         notes = researcher.decide({
+            "_data": pd.concat([ws.train.drop(columns=[ws.plan.target]), ws.test], ignore_index=True),
+            "_attempts": cfg.research_attempts,
             "competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric, "target": ws.plan.target,
             "classes": [str(c) for c in ws.classes] if ws.classes is not None else None,
             "columns": columns, "column_examples": examples,
-            "notebooks": [nb.for_prompt() | {"external_reads": nb.external_reads} for nb in notebooks],
+            "notebooks": [nb.for_prompt() | {"external_reads": nb.external_reads} for nb in notebooks[:8]],
         })
         ws.rules = notes.rules
         log.save_json("research.json", {

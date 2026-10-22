@@ -23,6 +23,11 @@ class OpenAIClient:
             raise LLMError("OPENAI_API_KEY is not set (use --llm mock to run without it)")
         self.client = OpenAI(max_retries=5)  # backs off on 429, which free tiers hit often
         self.model = os.getenv(model_env) or os.getenv("OPENAI_MODEL", model)
+        # free tiers cap output tokens per minute; an explicit ceiling keeps requests under it
+        cap = os.getenv(f"{model_env.replace('OPENAI_MODEL', 'OPENAI_MAX_TOKENS')}")
+        self.max_tokens = int(cap) if cap else None
+        # reasoning models spend output tokens thinking before the JSON; providers that support it can cap that
+        self.reasoning_effort = os.getenv(model_env.replace("OPENAI_MODEL", "OPENAI_REASONING_EFFORT"))
         self.temperature = temperature
         self.log_path = log_path
         host = urlparse(os.getenv("OPENAI_BASE_URL", "")).hostname or "api.openai.com"
@@ -35,6 +40,8 @@ class OpenAIClient:
                 model=self.model,
                 temperature=self.temperature,
                 response_format={"type": "json_object"},
+                **({"max_tokens": self.max_tokens} if self.max_tokens else {}),
+                **({"extra_body": {"reasoning_effort": self.reasoning_effort}} if self.reasoning_effort else {}),
                 messages=[
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},

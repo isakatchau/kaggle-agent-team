@@ -30,7 +30,7 @@ class Notebook:
     def leaks(self) -> bool:
         return bool(self.external_reads)
 
-    def for_prompt(self, max_chars: int = 2200) -> dict:
+    def for_prompt(self, max_chars: int = 1600) -> dict:
         """The opening of the prose and of the code, where tutorials state their method."""
         md = self.markdown[: max_chars // 2]
         return {"ref": self.ref, "title": self.title, "votes": self.votes,

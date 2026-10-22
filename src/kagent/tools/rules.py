@@ -10,8 +10,8 @@ statistics come from the training rows passed in, so the rule can be cross-valid
 
 from __future__ import annotations
 
+import re
 import time
-from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -50,16 +50,35 @@ def _mask(full: pd.DataFrame, conds: list[Condition]) -> np.ndarray:
     return m
 
 
-def validate_rule(rule: RuleModel, columns: list[str]) -> list[str]:
-    """Problems that make a rule unusable: unknown columns or non-binary outcomes."""
+def validate_rule(rule: RuleModel, columns: list[str], data: pd.DataFrame | None = None) -> list[str]:
+    """Problems that make a rule unusable: unknown columns, non-binary outcomes and, given the data,
+    regexes that match nothing or equality conditions no row satisfies (a translation error: e.g.
+    a tutorial's own labels 'woman'/'boy' used on a column whose values are 'Mrs'/'Master')."""
     known = set(columns) | {r.name for r in rule.derive}
     issues = [f"derive: unknown column {r.column}" for r in rule.derive if r.column not in columns]
+    for r in rule.derive:
+        try:
+            groups = re.compile(r.pattern).groups
+        except re.error as exc:
+            issues.append(f"derive {r.name}: invalid regex ({exc})")
+            continue
+        if groups != 1:
+            issues.append(f"derive {r.name}: the regex needs exactly one capture group, it has {groups}")
     cols = [rule.base_column] + [c.column for o in rule.overrides for c in o.when]
     cols += [k for o in rule.overrides for k in o.group_keys]
     cols += [c.column for o in rule.overrides for alt in o.members_when for c in alt]
     issues += [f"unknown column {c}" for c in sorted(set(cols) - known)]
     issues += [f"override outcomes must be 0/1: {o.if_all}->{o.set_to}" for o in rule.overrides
                if o.if_all not in (0, 1) or o.set_to not in (0, 1)]
+    if issues or data is None:
+        return issues
+    full = _frame(rule, data, data.iloc[:0])
+    issues += [f"derive {r.name}: the regex matches no row" for r in rule.derive if full[r.name].isna().all()]
+    conds = [c for o in rule.overrides for c in o.when] + [c for o in rule.overrides for alt in o.members_when for c in alt]
+    for c in conds:
+        if c.op in ("==", "in") and not _mask(full, [c]).any():
+            seen = full[c.column].dropna().astype(str).value_counts().index[:12].tolist()
+            issues.append(f"condition {c.column} {c.op} {c.value!r} matches no row; {c.column} takes values like {seen}")
     return issues
 
 

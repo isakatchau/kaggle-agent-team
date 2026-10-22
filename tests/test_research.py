@@ -118,3 +118,47 @@ def test_research_rules_become_cross_validated_candidates(tmp_path):
     research = json.loads((logger.run_dir / "research.json").read_text())
     assert research["read"][0]["external_reads"] == [] and research["rules"][0]["name"] == "household"
     assert any(e["agent"] == "research" and e["event"] == "decision" for e in read_events(logger.run_dir))
+
+
+def test_rule_validation_with_data_catches_translation_errors(tmp_path):
+    train, test = _households()
+    data = pd.concat([train.drop(columns="y"), test], ignore_index=True)
+    wrong = RuleModel.model_validate({**RULE, "overrides": [{**RULE["overrides"][0],
+                                      "when": [{"column": "kind", "op": "in", "value": ["woman", "boy"]}]}]})
+    issues = validate_rule(wrong, ["id", "kind", "name"], data)
+    assert len(issues) == 1 and "matches no row" in issues[0] and "'a'" in issues[0]
+    assert validate_rule(RuleModel.model_validate(RULE), ["id", "kind", "name"], data) == []
+
+
+def test_research_repairs_rejected_rules_once(tmp_path):
+    train, test = _households()
+    data = pd.concat([train.drop(columns="y"), test], ignore_index=True)
+    bad = {**RULE, "name": "first_try", "overrides": [{**RULE["overrides"][0],
+                                                       "when": [{"column": "kind", "op": "==", "value": "woman"}]}]}
+
+    class TwoAnswers(ScriptedLLM):
+        def complete_json(self, system, user):
+            self.calls.append((system, user))
+            ok = "rejected_rules" in user
+            assert '"_data"' not in user  # private keys never reach the prompt
+            return {"reasoning": "r", "rules": [RULE if ok else bad]}
+
+    logger = RunLogger.create(tmp_path, "t", verbose=False)
+    llm = TwoAnswers({})
+    notes = ResearchAgent(llm, logger).decide({"task": "binary", "columns": ["id", "kind", "name"], "_data": data})
+    assert [r.name for r in notes.rules] == ["household"] and len(llm.calls) == 2
+
+
+def test_research_keeps_valid_rules_from_several_attempts(tmp_path):
+    other = {**RULE, "name": "household", "base_column": "name"}  # same name, different rule
+
+    class Alternating(ScriptedLLM):
+        def complete_json(self, system, user):
+            self.calls.append((system, user))
+            return {"reasoning": "r", "rules": [RULE if len(self.calls) % 2 else other]}
+
+    logger = RunLogger.create(tmp_path, "t", verbose=False)
+    llm = Alternating({})
+    notes = ResearchAgent(llm, logger).decide({"task": "binary", "columns": ["id", "kind", "name"], "_attempts": 3})
+    assert [r.base_column for r in notes.rules] == ["kind", "name"] and len(llm.calls) == 3
+    assert len({r.name for r in notes.rules}) == 2
