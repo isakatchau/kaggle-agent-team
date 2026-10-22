@@ -298,6 +298,26 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
     )
 
 
+SIGNIFICANCE = 0.05
+
+
+def paired_p_better(a: ExperimentResult, b: ExperimentResult, y: np.ndarray, metric: str) -> float | None:
+    """One-sided exact McNemar test that `a` is more accurate than `b` on the same rows, from their
+    out-of-fold predictions (Dietterich, 1998): of the rows exactly one of them gets right, does `a`
+    win more than half? Only for accuracy, the one metric that is a sum over rows; None otherwise."""
+    if metric != "accuracy":
+        return None
+    from scipy.stats import binomtest
+
+    def right(r: ExperimentResult) -> np.ndarray:
+        pred = r.oof.argmax(axis=1) if r.oof.ndim == 2 else (r.oof >= 0.5).astype(int)
+        return pred == y
+
+    ra, rb = right(a), right(b)
+    wins, losses = int((ra & ~rb).sum()), int((~ra & rb).sum())
+    return 1.0 if wins + losses == 0 else float(binomtest(wins, wins + losses, 0.5, alternative="greater").pvalue)
+
+
 def model_complexity(model: str, params: dict, n_features: int) -> float:
     """Rough number of fitted decisions, comparable across families only in order of magnitude."""
     p = params
@@ -472,12 +492,12 @@ def blend(results: list[ExperimentResult], y: np.ndarray, metric: str, name: str
         fold_scores.append(M.score(metric, y[va], nested[va]))
 
     weights = _greedy(oofs, y, metric, max_steps)
-    oof = mix(weights, oofs)
+    in_sample = mix(weights, oofs)
     named = {results[i].name: round(w, 3) for i, w in weights.items()}
     return ExperimentResult(
         name=name, model="ensemble",
-        params={"weights": named, "in_sample_cv": round(M.score(metric, y, oof), 6)},
+        params={"weights": named, "in_sample_cv": round(M.score(metric, y, in_sample), 6)},
         cv_score=M.score(metric, y, nested), fold_scores=fold_scores,
-        oof=oof, test_pred=mix(weights, [r.test_pred for r in results]), seconds=0.0, metric=metric,
+        oof=nested, test_pred=mix(weights, [r.test_pred for r in results]), seconds=0.0, metric=metric,
         complexity=float(sum(results[i].complexity for i in weights)),
     )

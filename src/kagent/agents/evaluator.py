@@ -5,7 +5,25 @@ from .base import Agent
 from .schemas import SubmitDecision
 
 
+SIGNIFICANCE = 0.05
+
+
 def simplest_tied(candidates: list[dict], metric: str) -> dict:
+    """The simplest candidate the best-CV candidate does not significantly beat.
+
+    With paired p-values (`p_best_better`: one-sided McNemar on the same out-of-fold rows, accuracy
+    only), a candidate is kept unless the best is better with p < 0.05. Otherwise the one-standard-
+    error rule (Breiman et al.) stands in: within one standard error (`cv_se1`) of the best CV. CV
+    cannot tell kept candidates apart; the simpler one has fewer decisions that can be fitted to noise.
+    """
+    if all("p_best_better" in c for c in candidates):
+        kept = [c for c in candidates if c["p_best_better"] >= SIGNIFICANCE]
+        sign = 1 if M.GREATER_IS_BETTER[metric] else -1
+        return min(kept, key=lambda c: (c["complexity"], -sign * c["cv_score"]))
+    return _one_se(candidates, metric)
+
+
+def _one_se(candidates: list[dict], metric: str) -> dict:
     """One-standard-error rule (Breiman et al.): among candidates whose CV is within one standard error
     (`cv_se1`) of the best CV, the one with the lowest `complexity`. CV cannot tell tied candidates
     apart; the simpler one has fewer decisions that can be fitted to noise."""
@@ -26,9 +44,10 @@ class EvaluatorAgent(Agent[SubmitDecision]):
         "higher CV with a wide fold spread is often a lucky split. Ensemble CV is nested (weights "
         "chosen on other folds), so it is comparable to single-model CV; `params.in_sample_cv` minus "
         "`cv_score` is how much choosing the weights on the scored rows would have inflated it. "
-        "`complexity` counts a candidate's fitted decisions. Hard rules enforced after you answer: "
-        "among candidates within one standard error (`cv_se1`) of the best CV the simplest is used "
-        "unless yours beats it by more than that (one-standard-error rule); no submission once the "
+        "`complexity` counts a candidate's fitted decisions; `p_best_better` is a paired test (same "
+        "rows) that the best-CV candidate is more accurate than this one. Hard rules enforced after "
+        "you answer: the simplest candidate the best one does not beat with p < 0.05 is used (or, "
+        "without p-values, the simplest within one standard error `cv_se1`); no submission once the "
         "budget is spent; no submission unless the candidate's `cv_lcb` beats the best submitted CV "
         "by `min_improvement`."
     )
@@ -39,7 +58,7 @@ class EvaluatorAgent(Agent[SubmitDecision]):
         prev = ctx["best_submitted"]
         improves = M.is_better(metric, best["cv_lcb"], prev["cv_score"] if prev else None, ctx["min_improvement"])
         submit = improves and ctx["submissions_left"] > 0
-        why = (f"Simplest candidate within one standard error of the best CV: {best['name']} "
+        why = (f"Simplest candidate the best CV does not significantly beat: {best['name']} "
                f"(CV {best['cv_score']:.5f}, complexity {best['complexity']:.0f}, cv_lcb {best['cv_lcb']:.5f}). "
                + (f"Best submitted CV so far {prev['cv_score']:.5f}. " if prev else "Nothing submitted yet. ")
                + ("Even the pessimistic bound clears it; submit." if submit else "Not worth a submission."))
@@ -55,10 +74,15 @@ class EvaluatorAgent(Agent[SubmitDecision]):
         simple = simplest_tied(ctx["candidates"], metric)
         sign = 1 if M.GREATER_IS_BETTER[metric] else -1
         chosen = names[d.candidate]
-        if chosen["name"] != simple["name"] and chosen["complexity"] > simple["complexity"] \
-                and sign * (chosen["cv_score"] - simple["cv_score"]) <= chosen["cv_se1"]:
-            notes.append(f"one-standard-error rule: {d.candidate} (complexity {chosen['complexity']:.0f}) is "
-                         f"tied with the simpler {simple['name']} (complexity {simple['complexity']:.0f})")
+        if "p_best_better" in chosen:
+            replace = chosen["name"] != simple["name"] and (
+                chosen["complexity"] > simple["complexity"] or chosen["p_best_better"] < SIGNIFICANCE)
+        else:
+            replace = (chosen["name"] != simple["name"] and chosen["complexity"] > simple["complexity"]
+                       and sign * (chosen["cv_score"] - simple["cv_score"]) <= chosen["cv_se1"])
+        if replace:
+            notes.append(f"simplest-not-beaten rule: {d.candidate} (complexity {chosen['complexity']:.0f}) "
+                         f"replaced by {simple['name']} (complexity {simple['complexity']:.0f})")
             d = d.model_copy(update={"candidate": simple["name"]})
         cand, prev = names[d.candidate], ctx["best_submitted"]
         if d.submit and ctx["submissions_left"] <= 0:

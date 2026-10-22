@@ -30,7 +30,8 @@ from ..tools.features import FeatureMatrix, build_features
 from ..tools.kaggle import Platform, PlatformError, percentile
 from ..tools.profile import compact_profile, load_competition_files, profile
 from ..tools.submission import check_submission, write_submission
-from ..tools.train import PARAM_SPACE, ExperimentResult, blend, clip_params, run_cv
+from ..tools.train import (PARAM_SPACE, SIGNIFICANCE, ExperimentResult, blend, clip_params, paired_p_better,
+                           run_cv)
 
 
 class GraphState(TypedDict):
@@ -260,13 +261,18 @@ def build_graph(ws: Workspace):
         log.iteration = state["iteration"]
         ranked = sorted(ws.results, key=ws.sort_key)
         lead = ranked[0]
-        # the top 8 plus every candidate statistically tied with the best, so the simplest is never cut
-        tied = [r for r in ranked[8:] if -ws.sort_key(r) >= -ws.sort_key(lead) - lead.cv_se1]
+        p_lead = {r.name: paired_p_better(lead, r, ws.y, ws.metric) for r in ranked}
+        # the top 8 plus every candidate the best does not significantly beat, so the simplest is never cut
+        if all(p is None for p in p_lead.values()):
+            tied = [r for r in ranked[8:] if -ws.sort_key(r) >= -ws.sort_key(lead) - lead.cv_se1]
+        else:
+            tied = [r for r in ranked[8:] if (p_lead[r.name] or 0.0) >= SIGNIFICANCE]
         top = ranked[:8] + tied
         prev = ws.best_submission()
         ctx = {
             "metric": ws.metric, "greater_is_better": M.GREATER_IS_BETTER[ws.metric],
-            "candidates": [r.summary() for r in top],
+            "candidates": [r.summary() | ({"p_best_better": round(p_lead[r.name], 4)}
+                                          if p_lead[r.name] is not None else {}) for r in top],
             "best_submitted": prev,
             "past_submissions": ws.submissions,
             "submissions_left": cfg.budget.max_submissions - len(ws.submissions),

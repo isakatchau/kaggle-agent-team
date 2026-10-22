@@ -125,6 +125,37 @@ def test_evaluator_prefers_the_simplest_statistically_tied_candidate(logger):
     assert EvaluatorAgent(llm, logger).decide(ctx).candidate == "hgb"
 
 
+def test_evaluator_uses_paired_tests_when_available(logger):
+    # run 7 (local): the nested ensemble had the best CV, but was not significantly better than the
+    # 3-decision group override on the same rows (one-sided McNemar p = 0.11)
+    ens = {"name": "ens", "cv_score": 0.8507, "cv_lcb": 0.84, "cv_se1": 0.0086, "complexity": 43403, "p_best_better": 1.0}
+    hgb = {"name": "hgb", "cv_score": 0.8429, "cv_lcb": 0.83, "cv_se1": 0.0114, "complexity": 18600, "p_best_better": 0.30}
+    rule = {"name": "rule", "cv_score": 0.8395, "cv_lcb": 0.835, "cv_se1": 0.0076, "complexity": 3.1, "p_best_better": 0.114}
+    weak = {"name": "weak", "cv_score": 0.7879, "cv_lcb": 0.78, "cv_se1": 0.0097, "complexity": 2, "p_best_better": 0.0001}
+    ctx = {"metric": "accuracy", "candidates": [ens, hgb, rule, weak], "best_submitted": None,
+           "submissions_left": 3, "min_improvement": 0.0005}
+    assert EvaluatorAgent(None, logger).decide(ctx).candidate == "rule"
+    llm = ScriptedLLM({"evaluator": {"reasoning": "r", "submit": True, "candidate": "weak"}})
+    assert EvaluatorAgent(llm, logger).decide(ctx).candidate == "rule"  # significantly beaten: replaced
+    rule["p_best_better"] = 0.01
+    assert EvaluatorAgent(None, logger).decide(ctx).candidate == "hgb"
+
+
+def test_paired_p_better_is_one_sided_mcnemar():
+    import numpy as np
+    from kagent.tools.train import ExperimentResult, paired_p_better
+
+    y = np.array([1] * 60 + [0] * 40)
+    good = np.where(np.arange(100) < 90, y, 1 - y).astype(float)  # right on 90 rows
+    bad = np.where(np.arange(100) < 70, y, 1 - y).astype(float)   # right on 70 rows, a subset of good's
+    mk = lambda o: ExperimentResult(name="x", model="linear", params={}, cv_score=0, fold_scores=[0], oof=o,
+                                    test_pred=o, seconds=0)
+    assert paired_p_better(mk(good), mk(bad), y, "accuracy") < 1e-5   # 20 wins, 0 losses
+    assert paired_p_better(mk(bad), mk(good), y, "accuracy") == 1.0
+    assert paired_p_better(mk(good), mk(good), y, "accuracy") == 1.0
+    assert paired_p_better(mk(good), mk(bad), y, "roc_auc") is None
+
+
 def test_reviewer_stops_at_target(logger):
     llm = ScriptedLLM({"reviewer": {"reasoning": "r", "diagnosis": "d", "continue": True,
                                     "next_focus": "tuning", "suggestions": []}})
