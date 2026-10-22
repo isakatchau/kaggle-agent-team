@@ -449,7 +449,9 @@ def group_override(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, nam
         params={**params, "mean_accepted_rules": round(float(np.mean(n_rules)), 2)},
         cv_score=M.score(metric, y, oof), fold_scores=fold_scores, oof=oof, test_pred=test_pred,
         seconds=time.time() - t0, notes=notes, metric=metric, repeats=repeats,
-        complexity=float(2 ** params["depth"] + np.mean(n_rules)),  # cell tree only routes overrides
+        # every fitted piece: base tree leaves, the cell tree's leaves (fitted splits too) and accepted overrides
+        complexity=float(2 ** params["depth"] + (2 ** params["cell_depth"] if params["cell_depth"] > params["depth"] else 0)
+                         + np.mean(n_rules)),
     )
 
 

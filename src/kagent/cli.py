@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -34,7 +35,16 @@ def _execute(cfg: RunConfig, platform, submit: bool, quiet: bool) -> dict:
     except LLMError as exc:
         sys.exit(f"error: {exc}\nCheck OPENAI_API_KEY, OPENAI_BASE_URL and OPENAI_MODEL in .env, "
                  "or run with --llm mock.")
-    ws = Workspace(cfg=cfg, platform=platform, logger=logger, llm=llm, submit_enabled=submit)
+    research_llm = None
+    if llm is not None and os.getenv("OPENAI_MODEL_RESEARCH"):
+        # reading notebooks is the largest prompt; a separate model keeps it off the other agents' quota
+        try:
+            research_llm = make_llm(cfg.llm, logger.run_dir / "llm_calls.jsonl", model_env="OPENAI_MODEL_RESEARCH")
+            check_llm(research_llm)
+        except LLMError as exc:
+            sys.exit(f"error: research model: {exc}")
+    ws = Workspace(cfg=cfg, platform=platform, logger=logger, llm=llm, submit_enabled=submit,
+                   research_llm=research_llm)
     summary = run(ws)
     print("\n" + json.dumps(summary, indent=2))
     return summary

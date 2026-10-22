@@ -60,6 +60,7 @@ class Workspace:
     features: FeatureMatrix | None = None
     selected: ExperimentResult | None = None  # the Evaluator's last pick (submitted or saved)
     rules: list = field(default_factory=list)  # RuleModels adopted by the Research agent
+    research_llm: LLMClient | None = None  # optional separate model (and quota) for reading notebooks
     data_dir: Path | None = None
     feature_version: int = 0
     y: np.ndarray | None = None
@@ -129,8 +130,8 @@ def build_graph(ws: Workspace):
     modeler = ModelingAgent(ws.llm, log)
     evaluator = EvaluatorAgent(ws.llm, log)
     reviewer = LeaderboardReviewerAgent(ws.llm, log)
-    scout = NotebookScoutAgent(ws.llm, log)
-    researcher = ResearchAgent(ws.llm, log)
+    scout = NotebookScoutAgent(ws.research_llm or ws.llm, log)
+    researcher = ResearchAgent(ws.research_llm or ws.llm, log)
     cfg = ws.cfg
 
     def plan_node(state: GraphState) -> dict:
@@ -163,7 +164,7 @@ def build_graph(ws: Workspace):
         if cfg.research_notebooks <= 0:
             return {}
         listing, seen = [], set()
-        for sort, n, tag in (("voteCount", 20, "votes"), ("scoreDescending", 30, "score")):
+        for sort, n, tag in (("voteCount", 100, "votes"), ("scoreDescending", 30, "score")):
             log.log("tools", "tool_call", f"list notebooks by {sort}")
             for nb in ws.platform.notebook_list(cfg.competition, sort, n):
                 if nb["ref"] not in seen:
@@ -187,15 +188,23 @@ def build_graph(ws: Workspace):
                     refs.append(nb["ref"])
         meta = {n["ref"]: n for n in listing}
         files = [p.name for p in ws.data_dir.glob("*.csv") if not p.name.startswith("_")]
-        notebooks = []
-        for ref in refs[: cfg.research_notebooks + 4]:
+        notebooks, queue, followed = [], refs[: cfg.research_notebooks + 4], 0
+        while queue:
+            ref = queue.pop(0)
             dest = ws.platform.notebook_pull(ref, cfg.data_dir / cfg.competition / "_notebooks" / ref.replace("/", "__"))
-            nb = load_notebook(dest, ref, cfg.competition, files, meta[ref]["title"], meta[ref]["votes"]) if dest else None
+            info = meta.get(ref, {"title": "", "votes": 0})
+            nb = load_notebook(dest, ref, cfg.competition, files, info["title"], info["votes"]) if dest else None
             if nb is None:
                 log.log("tools", "error", f"could not read notebook {ref}")
                 continue
             notebooks.append(nb)
             log.log("tools", "tool_result", f"read {ref}" + (f" (external data: {nb.external_reads[:2]})" if nb.leaks else ""))
+            for link in nb.linked_notebooks():  # follow references, as a reader clicks through them
+                if followed < 3 and link not in refs and link not in queue:
+                    refs.append(link)
+                    queue.append(link)
+                    followed += 1
+                    log.log("tools", "tool_call", f"follow reference {link} from {ref}")
         if not notebooks:
             return {}
         examples = {c["name"]: c["examples"][:3] for c in ws.profile["columns"] if c["name"] in columns}

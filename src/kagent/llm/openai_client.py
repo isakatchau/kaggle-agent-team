@@ -15,13 +15,14 @@ class OpenAIClient:
     OPENAI_BASE_URL points it at any compatible provider (Groq, OpenRouter, a local server).
     """
 
-    def __init__(self, model: str, temperature: float = 0.2, log_path: Path | None = None):
+    def __init__(self, model: str, temperature: float = 0.2, log_path: Path | None = None,
+                 model_env: str = "OPENAI_MODEL"):
         from openai import OpenAI  # imported lazily so the mock path needs no key
 
         if not os.getenv("OPENAI_API_KEY"):
             raise LLMError("OPENAI_API_KEY is not set (use --llm mock to run without it)")
         self.client = OpenAI(max_retries=5)  # backs off on 429, which free tiers hit often
-        self.model = os.getenv("OPENAI_MODEL", model)
+        self.model = os.getenv(model_env) or os.getenv("OPENAI_MODEL", model)
         self.temperature = temperature
         self.log_path = log_path
         host = urlparse(os.getenv("OPENAI_BASE_URL", "")).hostname or "api.openai.com"

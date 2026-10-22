@@ -6,14 +6,14 @@ from ..config import LLMConfig
 from .base import LLMClient, LLMError
 
 
-def make_llm(cfg: LLMConfig, log_path: Path | None = None) -> LLMClient | None:
+def make_llm(cfg: LLMConfig, log_path: Path | None = None, model_env: str = "OPENAI_MODEL") -> LLMClient | None:
     """Return an LLM client, or None for the deterministic heuristic mode."""
     if cfg.provider == "mock":
         return None
     if cfg.provider == "openai":
         from .openai_client import OpenAIClient
 
-        return OpenAIClient(cfg.model, cfg.temperature, log_path)
+        return OpenAIClient(cfg.model, cfg.temperature, log_path, model_env=model_env)
     raise LLMError(f"unknown provider {cfg.provider}")
 
 

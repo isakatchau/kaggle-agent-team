@@ -112,5 +112,7 @@ def run_rule_cv(rule: RuleModel, train: pd.DataFrame, test: pd.DataFrame, y: np.
     return ExperimentResult(
         name=name, model="rule", params=rule.model_dump(), cv_score=M.score(metric, y, oof),
         fold_scores=fold_scores, oof=oof, test_pred=test_pred, seconds=time.time() - t0, metric=metric,
-        repeats=repeats, complexity=float(1 + 2 * len(rule.overrides)),
+        # fitted pieces: one majority class per base value, one group statistic per override (conditions come
+        # from the rule, not from the data)
+        repeats=repeats, complexity=float(full[rule.base_column].iloc[:n].nunique() + len(rule.overrides)),
     )
