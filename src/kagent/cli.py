@@ -42,7 +42,9 @@ def _execute(cfg: RunConfig, platform, submit: bool, quiet: bool) -> dict:
             research_llm = make_llm(cfg.llm, logger.run_dir / "llm_calls.jsonl", model_env="OPENAI_MODEL_RESEARCH")
             check_llm(research_llm)
         except LLMError as exc:
-            sys.exit(f"error: research model: {exc}")
+            # without its own model, live research would eat the other agents' quota: use the memory only
+            research_llm, cfg.research_notebooks = None, 0
+            logger.log("research", "fallback", f"research model unavailable, using research memory only: {exc}")
     ws = Workspace(cfg=cfg, platform=platform, logger=logger, llm=llm, submit_enabled=submit,
                    research_llm=research_llm)
     summary = run(ws)
