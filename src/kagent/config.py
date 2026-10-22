@@ -40,6 +40,10 @@ class RunConfig(BaseModel):
     id_column: str | None = None
     target_percentile: float = Field(0.20, gt=0, le=1)
     cv_folds: int = Field(5, ge=2, le=10)
+    cv_repeats: int | None = Field(
+        None, ge=1, le=5,
+        description="Repeated CV with new shuffles. None = 3 below 5,000 train rows (where one split is "
+                    "noisier than the differences between candidates), else 1.")
     seed: int = 42
     sample_rows: int | None = Field(
         None, description="Train on a random subset to keep runs fast on big datasets."

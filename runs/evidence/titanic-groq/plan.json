@@ -1,0 +1,20 @@
+{
+  "reasoning": "The dataset is the classic Titanic problem. The column 'Survived' is the only target candidate and is binary (0/1). The sample submission contains 'PassengerId' and 'Survived' as integer columns, indicating that predictions should be class labels, not probabilities. Therefore the task is binary classification, the metric used by the original competition is accuracy, the target column is 'Survived', the identifier column is 'PassengerId', and the submission format is 'label'. All listed model families are applicable. Main risks are class imbalance (\u224838% survived), missing values in 'Age' (\u224820%) and 'Cabin' (\u224877%), and high\u2011cardinality categorical fields ('Name', 'Ticket', 'Cabin') that require careful encoding.",
+  "task": "binary",
+  "metric": "accuracy",
+  "target": "Survived",
+  "id_column": "PassengerId",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees",
+    "linear"
+  ],
+  "risks": [
+    "class imbalance",
+    "missing values in Age and Cabin",
+    "high-cardinality text fields (Name, Ticket, Cabin)"
+  ]
+}

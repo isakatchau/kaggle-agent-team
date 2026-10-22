@@ -10,5 +10,7 @@ lightgbm==4.7.0
 joblib==1.6.0
 matplotlib==3.11.2
 kaggle==2.2.4
+truststore==0.10.5
 streamlit==1.66.0
 pytest==9.1.1
+pytest-playwright==0.10.0

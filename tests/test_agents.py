@@ -62,16 +62,39 @@ def test_llm_outage_falls_back(planner_ctx, logger):
 
 def test_evaluator_cannot_exceed_budget(logger):
     llm = ScriptedLLM({"evaluator": {"reasoning": "yolo", "submit": True, "candidate": "a"}})
-    ctx = {"metric": "roc_auc", "candidates": [{"name": "a", "cv_score": 0.9, "cv_std": 0.01}],
+    ctx = {"metric": "roc_auc", "candidates": [{"name": "a", "cv_score": 0.9, "cv_std": 0.01, "cv_lcb": 0.897}],
            "best_submitted": None, "submissions_left": 0, "min_improvement": 0.001}
     assert EvaluatorAgent(llm, logger).decide(ctx).submit is False
 
 
 def test_evaluator_requires_cv_improvement(logger):
     llm = ScriptedLLM({"evaluator": {"reasoning": "r", "submit": True, "candidate": "a"}})
-    ctx = {"metric": "rmse", "candidates": [{"name": "a", "cv_score": 0.30, "cv_std": 0.01}],
+    ctx = {"metric": "rmse", "candidates": [{"name": "a", "cv_score": 0.30, "cv_std": 0.01, "cv_lcb": 0.303}],
            "best_submitted": {"cv_score": 0.2999}, "submissions_left": 2, "min_improvement": 0.001}
     assert EvaluatorAgent(llm, logger).decide(ctx).submit is False
+
+
+def test_evaluator_gates_on_the_pessimistic_bound(logger):
+    # Titanic run 1: an ensemble 0.2 points above the submitted CV but with the widest fold spread
+    noisy = {"name": "ens", "cv_score": 0.8395, "cv_std": 0.0287, "cv_lcb": 0.8267}
+    steady = {"name": "lgbm", "cv_score": 0.8390, "cv_std": 0.0120, "cv_lcb": 0.8359}
+    ctx = {"metric": "accuracy", "candidates": [noisy, steady], "best_submitted": {"cv_score": 0.8373},
+           "submissions_left": 2, "min_improvement": 0.0005}
+    llm = ScriptedLLM({"evaluator": {"reasoning": "r", "submit": True, "candidate": "ens"}})
+    assert EvaluatorAgent(llm, logger).decide(ctx).submit is False
+    first = EvaluatorAgent(None, logger).decide({**ctx, "best_submitted": None})
+    assert first.candidate == "lgbm" and first.submit
+
+
+def test_reviewer_cannot_repeat_a_focus_that_just_stalled(logger):
+    # Titanic run: the LLM asked for "models" three times in a row with zero CV gain
+    llm = ScriptedLLM({"reviewer": {"reasoning": "r", "diagnosis": "d", "continue": True,
+                                    "next_focus": "models", "suggestions": []}})
+    rounds = [{"focus": "features", "best_cv_gain": None}, {"focus": "models", "best_cv_gain": 0.0}]
+    ctx = {"percentile": 0.7, "target_percentile": 0.2, "rounds": rounds, "iterations_left": 2}
+    assert LeaderboardReviewerAgent(llm, logger).decide(ctx).next_focus == "tuning"
+    rounds[-1]["best_cv_gain"] = 0.004  # a lever that is still paying off may be repeated
+    assert LeaderboardReviewerAgent(llm, logger).decide(ctx).next_focus == "models"
 
 
 def test_reviewer_stops_at_target(logger):
@@ -80,3 +103,39 @@ def test_reviewer_stops_at_target(logger):
     ctx = {"percentile": 0.1, "target_percentile": 0.2, "rounds": [], "iterations_left": 3}
     review = LeaderboardReviewerAgent(llm, logger).decide(ctx)
     assert review.continue_ is False and review.next_focus == "stop"
+
+
+def test_preflight_fails_loudly_instead_of_falling_back():
+    from kagent.llm import check_llm
+
+    with pytest.raises(LLMError):
+        check_llm(ScriptedLLM({"JSON": LLMError("401 invalid api key")}))
+    check_llm(ScriptedLLM({"JSON": {"ok": True}}))
+
+
+@pytest.mark.parametrize("base_url, name", [
+    (None, "openai:m"), ("https://api.groq.com/openai/v1", "groq:m"), ("https://openrouter.ai/api/v1", "openrouter:m"),
+])
+def test_openai_compatible_client_names_the_provider(monkeypatch, base_url, name):
+    from kagent.llm.openai_client import OpenAIClient
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    if base_url:
+        monkeypatch.setenv("OPENAI_BASE_URL", base_url)
+    else:
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    assert OpenAIClient("m").name == name
+
+
+def test_modeling_guard_does_not_double_the_iteration_prefix(logger):
+    from kagent.agents import ModelingAgent
+    from kagent.agents.schemas import Experiment, ExperimentBatch
+
+    batch = ExperimentBatch(reasoning="", experiments=[
+        Experiment(name="it2_lgbm_1", model="lightgbm", params={}),
+        Experiment(name="it1_it1_rf_1", model="random_forest", params={}),
+    ])
+    ctx = {"history": [], "n_rows": 891, "feature_version": 1, "iteration": 2, "max_experiments": 4}
+    guarded, _ = ModelingAgent(None, logger).guard(batch, ctx)
+    assert [e.name for e in guarded.experiments] == ["it2_lgbm_1", "it2_rf_1"]

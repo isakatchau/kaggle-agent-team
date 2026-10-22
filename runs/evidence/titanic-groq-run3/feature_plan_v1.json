@@ -1,0 +1,45 @@
+{
+  "reasoning": "The Titanic data has a binary target (Survived) and mixed numeric/categorical features. High\u2011cardinality free\u2011text columns (Name, Ticket, Cabin) risk over\u2011fitting, so we extract concise signals and then drop the raw text. \u2022 Name: capture the passenger title (e.g. Mr, Mrs, Miss) with a regex; titles are known strong predictors of survival. \u2022 Cabin: extract the deck letter (first character) which encodes location on the ship and is far less sparse than the full cabin code (77\u202f% missing). \u2022 Ticket: extract any alphabetic prefix (e.g. \u201cPC\u201d, \u201cA/5\u201d) that groups tickets bought together. We also create a group\u2011size feature for Ticket to capture families or groups sharing a ticket. \u2022 Fare is highly right\u2011skewed (skew\u202f=\u202f4.79) so we log\u2011transform it. \u2022 Age has ~20\u202f% missing; we keep the column (imputation will be handled downstream) and add a missing\u2011indicator (default true). \u2022 Embarked, Sex and Pclass are low\u2011cardinality categoricals; we frequency\u2011encode them to give tree models a numeric representation without one\u2011hot explosion. \u2022 Ticket and Cabin (raw) are dropped after extracting the deck/prefix and group\u2011size, as they provide little additional signal beyond the engineered features. PassengerId is a pure identifier and is also dropped. No datetime columns exist. The target is binary, so we do not log\u2011transform it. This plan directly addresses the listed risks: class imbalance is handled by model choice, missing Age is flagged, and high\u2011cardinality text is reduced to compact categorical signals.",
+  "drop_columns": [
+    "Name",
+    "Ticket",
+    "Cabin"
+  ],
+  "log_transform_columns": [
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Ticket",
+    "Cabin",
+    "Embarked",
+    "Sex",
+    "Pclass"
+  ],
+  "text_length_columns": [],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": ",\\s*([^\\.]+)\\.",
+      "name": "Title"
+    },
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Za-z])",
+      "name": "CabinDeck"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^([A-Za-z\\.\\/]+)",
+      "name": "TicketPrefix"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [
+    [
+      "Ticket"
+    ]
+  ],
+  "add_missing_indicators": true,
+  "log_target": false
+}

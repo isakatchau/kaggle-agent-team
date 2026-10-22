@@ -1,0 +1,20 @@
+[
+  {
+    "iteration": 1,
+    "candidate": "it1_lgbm_1",
+    "cv_score": 0.8372615039281706,
+    "lb_score": 0.78229,
+    "percentile": 0.22194122263887678,
+    "file": "runs\\titanic\\20261022T005215Z\\submissions\\it1_lgbm_1.csv",
+    "leaderboard_size": 11466
+  },
+  {
+    "iteration": 4,
+    "candidate": "it4_ensemble",
+    "cv_score": 0.8395061728395061,
+    "lb_score": 0.77033,
+    "percentile": 0.6566669573558909,
+    "file": "runs\\titanic\\20261022T005215Z\\submissions\\it4_ensemble.csv",
+    "leaderboard_size": 11466
+  }
+]

@@ -19,9 +19,10 @@ st.title("Kaggle agent team")
 
 
 def load_index() -> pd.DataFrame:
+    # recursive, keeping the real directory: committed evidence lives in runs/evidence/<competition>/
     rows = []
-    for summary in RUNS.glob("*/*/summary.json"):
-        rows.append(json.loads(summary.read_text()))
+    for summary in RUNS.rglob("summary.json"):
+        rows.append({**json.loads(summary.read_text()), "dir": str(summary.parent)})
     return pd.DataFrame(rows).sort_values("run_id", ascending=False) if rows else pd.DataFrame()
 
 
@@ -35,10 +36,8 @@ cols = ["run_id", "competition", "platform", "llm", "metric", "iterations", "exp
         "best_cv", "submissions", "best_lb", "best_percentile", "target_percentile", "minutes"]
 st.dataframe(index[[c for c in cols if c in index]], hide_index=True, use_container_width=True)
 
-options = [f"{r.competition} / {r.run_id}" for r in index.itertuples()]
-choice = st.selectbox("Run", options)
-comp, run_id = choice.split(" / ")
-run_dir = RUNS / comp / run_id
+dirs = {f"{r.competition} / {r.run_id}": Path(r.dir) for r in index.itertuples()}
+run_dir = dirs[st.selectbox("Run", list(dirs))]
 summary = json.loads((run_dir / "summary.json").read_text())
 
 c1, c2, c3, c4 = st.columns(4)

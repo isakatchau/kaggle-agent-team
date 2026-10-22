@@ -24,7 +24,7 @@ from ..agents import DataAgent, EvaluatorAgent, LeaderboardReviewerAgent, Modeli
 from ..agents.schemas import CompetitionPlan, FeaturePlan
 from ..config import RunConfig
 from ..llm.base import LLMClient
-from ..observability.events import RunLogger, append_index
+from ..observability.events import RunLogger, append_index, read_events
 from ..tools import metrics as M
 from ..tools.features import FeatureMatrix, build_features
 from ..tools.kaggle import Platform, PlatformError, percentile
@@ -69,6 +69,12 @@ class Workspace:
     def metric(self) -> str:
         return self.plan.metric
 
+    @property
+    def cv_repeats(self) -> int:
+        if self.cfg.cv_repeats is not None:
+            return self.cfg.cv_repeats
+        return 3 if len(self.train) < 5000 else 1
+
     def sort_key(self, r: ExperimentResult) -> float:
         return -r.cv_score if M.GREATER_IS_BETTER[self.metric] else r.cv_score
 
@@ -86,6 +92,13 @@ class Workspace:
             return None
         sign = -1 if M.GREATER_IS_BETTER[self.metric] else 1
         return min(scored, key=lambda s: sign * s["cv_score"])
+
+    def best_lb(self) -> float | None:
+        """Best public score; best_submission() ranks by CV, which is what the submit gate needs."""
+        values = [s["lb_score"] for s in self.submissions if s.get("lb_score") is not None]
+        if not values:
+            return None
+        return max(values) if M.GREATER_IS_BETTER[self.metric] else min(values)
 
     def best_percentile(self) -> float | None:
         values = [s["percentile"] for s in self.submissions if s.get("percentile") is not None]
@@ -178,7 +191,8 @@ def build_graph(ws: Workspace):
             log.log("tools", "tool_call", f"train {exp.name} ({exp.model})", params=exp.params)
             try:
                 res = run_cv(ws.features, ws.y, ws.plan.task, ws.metric, exp.name, exp.model, exp.params,
-                             cfg.cv_folds, cfg.seed, ws.feature_plan.log_target, log.run_dir / "models")
+                             cfg.cv_folds, cfg.seed, ws.feature_plan.log_target, log.run_dir / "models",
+                             repeats=ws.cv_repeats)
             except Exception as exc:  # one bad experiment must not end the run
                 log.log("tools", "error", f"{exp.name} failed: {exc}")
                 continue
@@ -289,14 +303,15 @@ def build_graph(ws: Workspace):
     def finalize_node(state: GraphState) -> dict:
         best = ws.best_result()
         prune_checkpoints(best)
-        best_sub = ws.best_submission()
         summary = {
             "run_id": log.run_id, "competition": cfg.competition, "platform": ws.platform.name,
-            "llm": ws.llm.name if ws.llm else "heuristic", "metric": ws.metric,
+            "llm": ws.llm.name if ws.llm else "heuristic",
+            "llm_fallbacks": sum(e["event"] == "fallback" for e in read_events(log.run_dir)),
+            "metric": ws.metric,
             "iterations": state["iteration"], "experiments": len(ws.results),
             "best_cv": best.cv_score if best else None, "best_experiment": best.name if best else None,
             "submissions": len(ws.submissions),
-            "best_lb": best_sub["lb_score"] if best_sub else None,
+            "best_lb": ws.best_lb(),
             "best_percentile": ws.best_percentile(), "target_percentile": cfg.target_percentile,
             "minutes": round((time.time() - ws.started) / 60, 1), "run_dir": str(log.run_dir),
         }

@@ -4,23 +4,28 @@ import json
 import os
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .base import LLMError
 
 
 class OpenAIClient:
-    """OpenAI chat completions in JSON mode. Every call is appended to llm_calls.jsonl."""
+    """OpenAI-compatible chat completions in JSON mode. Every call is appended to llm_calls.jsonl.
+
+    OPENAI_BASE_URL points it at any compatible provider (Groq, OpenRouter, a local server).
+    """
 
     def __init__(self, model: str, temperature: float = 0.2, log_path: Path | None = None):
         from openai import OpenAI  # imported lazily so the mock path needs no key
 
         if not os.getenv("OPENAI_API_KEY"):
             raise LLMError("OPENAI_API_KEY is not set (use --llm mock to run without it)")
-        self.client = OpenAI()
+        self.client = OpenAI(max_retries=5)  # backs off on 429, which free tiers hit often
         self.model = os.getenv("OPENAI_MODEL", model)
         self.temperature = temperature
         self.log_path = log_path
-        self.name = f"openai:{self.model}"
+        host = urlparse(os.getenv("OPENAI_BASE_URL", "")).hostname or "api.openai.com"
+        self.name = f"{host.split('.')[-2]}:{self.model}"  # openai:gpt-4o-mini, groq:openai/gpt-oss-120b
 
     def complete_json(self, system: str, user: str) -> dict:
         t0 = time.time()
@@ -35,7 +40,7 @@ class OpenAIClient:
                 ],
             )
         except Exception as exc:  # network, auth, rate limit
-            raise LLMError(f"OpenAI call failed: {exc}") from exc
+            raise LLMError(f"{self.name} call failed: {exc}") from exc
 
         text = resp.choices[0].message.content or "{}"
         usage = getattr(resp, "usage", None)

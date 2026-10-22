@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from ..tools.train import PARAM_SPACE, clip_params
 from .base import Agent
@@ -67,7 +68,8 @@ class ModelingAgent(Agent[ExperimentBatch]):
                 notes.append(f"skipped duplicate {e.name}")
                 continue
             seen.add(sig)
-            keep.append(e.model_copy(update={"name": f"it{ctx['iteration']}_{e.name}"[:60]}))
+            base = re.sub(r"^(it\d+_)+", "", e.name)  # LLMs often echo the prefix they saw in history
+            keep.append(e.model_copy(update={"name": f"it{ctx['iteration']}_{base}"[:60]}))
         if len(keep) > ctx["max_experiments"]:
             notes.append(f"trimmed batch to {ctx['max_experiments']}")
             keep = keep[: ctx["max_experiments"]]

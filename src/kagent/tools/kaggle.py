@@ -1,7 +1,7 @@
 """Competition platform tools.
 
 `KaggleCLI` talks to kaggle.com through the official CLI (credentials come from
-~/.kaggle/kaggle.json or KAGGLE_USERNAME / KAGGLE_KEY, never from this repo).
+`kaggle auth login`, KAGGLE_API_TOKEN or ~/.kaggle/access_token, never from this repo).
 `OfflineKaggle` implements the same interface against a local folder with a
 hidden solution, so the whole loop can be tested without an account.
 """
@@ -11,6 +11,7 @@ from __future__ import annotations
 import io
 import json
 import subprocess
+import sys
 import time
 import zipfile
 from pathlib import Path
@@ -54,13 +55,14 @@ class KaggleCLI:
         self.poll_timeout = poll_timeout
 
     def _run(self, *args: str, check: bool = True) -> str:
-        cmd = ["kaggle", *args]
+        # current interpreter: works without an activated venv; kaggle_entry trusts the OS certificate store
+        cmd = [sys.executable, "-m", "kagent.tools.kaggle_entry", *args]
         proc = subprocess.run(cmd, capture_output=True, text=True)
         if check and proc.returncode != 0:
             msg = (proc.stderr or proc.stdout).strip()
             if "403" in msg or "rules" in msg.lower():
                 msg += "\nHint: open the competition page and accept its rules with your account first."
-            raise PlatformError(f"{' '.join(cmd)} failed: {msg}")
+            raise PlatformError(f"kaggle {' '.join(args)} failed: {msg}")
         return proc.stdout
 
     def download(self, competition: str, dest: Path) -> Path:

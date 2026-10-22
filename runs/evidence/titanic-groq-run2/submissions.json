@@ -1,0 +1,11 @@
+[
+  {
+    "iteration": 1,
+    "candidate": "it1_ensemble",
+    "cv_score": 0.8338945005611672,
+    "lb_score": 0.76794,
+    "percentile": 0.6982713462545835,
+    "file": "runs\\titanic\\20261022T012027Z\\submissions\\it1_ensemble.csv",
+    "leaderboard_size": 11453
+  }
+]

@@ -20,11 +20,12 @@ dependencies = [
   "joblib==1.6.0",
   "matplotlib==3.11.2",
   "kaggle==2.2.4",
+  "truststore==0.10.5",
 ]
 
 [project.optional-dependencies]
 dashboard = ["streamlit==1.66.0"]
-dev = ["pytest==9.1.1"]
+dev = ["pytest==9.1.1", "pytest-playwright==0.10.0"]
 
 [project.scripts]
 kagent = "kagent.cli:main"
@@ -34,3 +35,5 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not e2e'"
+markers = ["e2e: browser tests of the dashboard (make e2e)"]

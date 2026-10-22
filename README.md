@@ -47,7 +47,7 @@ flowchart LR
 ```
 
 - **Orchestration**: a LangGraph `StateGraph` (`src/kagent/orchestrator/graph.py`). Graph state holds only control flow (iteration, focus, done). DataFrames, features and models live in a shared `Workspace`.
-- **LLM interface**: `LLMClient.complete_json(system, user) -> dict` (`src/kagent/llm/`). The OpenAI client uses JSON mode. Adding a provider means adding one class.
+- **LLM interface**: `LLMClient.complete_json(system, user) -> dict` (`src/kagent/llm/`). The OpenAI-compatible client uses JSON mode and talks to any compatible endpoint through `OPENAI_BASE_URL` (Groq's free tier by default in `.env.example`). Before a run, one tiny preflight call checks the key, URL and model, so a misconfiguration stops the run instead of silently degrading every agent to its heuristic. `summary.json` reports `llm_fallbacks`.
 - **Agents never execute code they write.** They choose from typed menus (feature operations, model families, bounded params). This keeps the system safe and reproducible, and lets the heuristics and the LLM share one interface. The cost is expressiveness; see Limitations.
 - **Observability**:
   - `runs/<competition>/<run_id>/events.jsonl`: every reasoning, decision, tool call, tool result, error and fallback.
@@ -85,8 +85,8 @@ make test                      # offline, no keys needed
 
 ### 2. Credentials (kept outside the repo)
 
-- **OpenAI:** `cp .env.example .env`, then set `OPENAI_API_KEY`.
-- **Kaggle:** go to kaggle.com → Settings → API → *Create New Token*, then save the file as `~/.kaggle/kaggle.json` (`chmod 600`).
+- **LLM:** `cp .env.example .env`, then set `OPENAI_API_KEY`. The example targets Groq (free key at console.groq.com, model `openai/gpt-oss-120b`). For OpenAI, remove `OPENAI_BASE_URL` and set `OPENAI_MODEL=gpt-4o-mini`.
+- **Kaggle** (CLI 2.x): run `kaggle auth login` (OAuth in the browser, no token to manage), or generate a token at kaggle.com/settings/api and save it as `~/.kaggle/access_token` or export `KAGGLE_API_TOKEN`. Check with `python -m kagent kaggle competitions list`. The `kagent kaggle` wrapper is the official CLI verifying TLS against the OS certificate store (as all of `kagent` does through `truststore`), so it also works behind TLS-inspecting antivirus or corporate proxies; use `python -m kagent kaggle auth login` if plain `kaggle auth login` fails with `CERTIFICATE_VERIFY_FAILED`.
 - **Competition rules:** open each competition page once and click *Join / I understand and accept*. The API returns 403 until you do.
 
 ### 3. Run
@@ -138,8 +138,17 @@ make docker-run COMP=titanic             # mounts ~/.kaggle read-only and passes
 |---|---|---|---|---|---|---|
 | synthetic-binary (offline) | ROC AUC ↑ | 0.7735 | 0.7666 | top 6.5% of 400 synthetic teams | 1 / 1 | `runs/evidence/synthetic-binary` |
 | synthetic-regression (offline, target top 5%) | RMSLE ↓ | 0.2681 | 0.2710 | top 10.0% of 400 synthetic teams | 4 / 1 | `runs/evidence/synthetic-regression` |
-| titanic | accuracy ↑ | _fill after run_ | | | | |
-| house-prices-advanced-regression-techniques | RMSLE ↓ | | | | | |
+| titanic (LLM agents: Groq `openai/gpt-oss-120b`) | accuracy ↑ | 0.8395 (nested ensemble); 0.8373 best single | **0.78229** | top 22.2% of 11,466 (target 20%: not reached) | 4 / 2 | `runs/evidence/titanic-groq` |
+| titanic, run 2 (after repeated CV + `cv_lcb` gate) | accuracy ↑ | 0.8339 (3×5-fold) | 0.76794 | top 69.8% | 4 / 1 | `runs/evidence/titanic-groq-run2` |
+| titanic, run 3 (after the reviewer stall guard) | accuracy ↑ | 0.8395 (3×5-fold) | 0.76794 | top 69.8% | 4 / 1 | `runs/evidence/titanic-groq-run3` |
+| titanic (heuristic agents, `--no-submit`) | accuracy ↑ | 0.8418 (nested ensemble); 0.8350 best single | | | 4 / 0 | `runs/evidence/titanic-heuristic` |
+| house-prices-advanced-regression-techniques | RMSLE ↓ | not run | | | | |
+
+**What the Titanic run shows.** The Planner inferred task, metric, target and id with no YAML overrides. The Data agent extracted passenger title, cabin deck and ticket prefix by regex and built family size and fare per person (the heuristic only takes the leading token). The Evaluator submitted the best single model rather than an ensemble that only mirrored it, then held back two rounds whose CV did not clear `min_improvement`. Its second submission, an ensemble with +0.2 points of CV and the highest fold std of the round, scored 0.77033 (top 65.7%): the public score covers all 418 test rows (0.78229 = 327/418, 0.77033 = 322/418), so that is 5 passengers, and the leaderboard is so dense around 0.775-0.78 that this moves the position by 40 points.
+
+**Chasing the top 20%, and why it was not reached.** Top 20% on Titanic is 328/418 correct; the best run got 327. Two generic changes followed the first run: repeated CV with a pessimistic submit gate (`cv_lcb`), and a reviewer guardrail that forbids repeating a focus that just produced no CV gain (run 2 asked for `models` three times in a row with zero gain). Both worked as designed in runs 2 and 3: the gate held back every later candidate, and the guard switched `models` to `tuning` and forced a features round. Neither moved the leaderboard, because they target variance and the real limit is bias: across all three LLM runs CV sits at 0.83-0.84 and the public score at 0.768-0.782, a systematic 5.5-7 point gap that no choice between similar candidates can close, and the first submission of each run (which no gate can filter, since nothing is submitted yet) decides the score. Runs were capped at two after the first, by decision, rather than resubmitting variants until one crossed a one-passenger margin, which would measure leaderboard noise, not the agents. The next lever is the first submission itself: reserve it for the most regularised candidate, or let the reviewer trade CV for simplicity when the CV-LB gap is large.
+
+**LLM vs heuristic.** Under the same nested CV, the differences (best single 0.8373 vs 0.8350, ensemble 0.8395 vs 0.8418) are well inside the fold std (~0.02). On a dataset this small, the LLM's measurable contribution is the quality and traceability of its choices, not CV. Reasoning errors seen in the logs, which guardrails do not catch: the reviewer read the CV-LB gap as overfitting and then asked for more capacity; the reviewer suggested CatBoost/XGBoost, which are outside the typed menu; the Evaluator read a higher in-sample ensemble CV as evidence *against* overfitting.
 
 The synthetic leaderboard is generated, not real. Teams are spread between a constant prediction and the noise-free oracle. It exists to test the stopping and routing logic offline. Real positions come from the downloaded Kaggle leaderboard: rank / (teams + 1) at the time of submission.
 
@@ -148,7 +157,8 @@ The synthetic leaderboard is generated, not real. Teams are spread between a con
 - **Typed action space instead of generated code.** The LLM's leverage is in *choices*: which text pattern to extract, which interactions to build, where to tune, when to stop. Generated-code agents can express more, but they fail in ways that are hard to sandbox and to reproduce.
 - **Hard rules outside the LLM.** Submission budget, the improvement threshold, param bounds and column validity are enforced in code. The LLM's reasoning is logged next to what the guardrails changed, so overrides are visible.
 - **CV is the primary signal; the LB is a check.** The evaluator submits only on CV improvement, which protects against public-LB overfitting and saves daily submissions.
-- **Greedy ensemble selection** (Caruana et al., 2004) on out-of-fold predictions. It is cheap and usually beats the best single model. The selection step makes its CV slightly optimistic, which the evaluator is told about.
+- **Uncertainty-aware submissions.** Below 5,000 train rows CV is repeated 3 times with new shuffles (`cv_repeats`), because one 5-fold split is noisier than the differences between candidates (Titanic fold std ~0.02). Every candidate carries `cv_lcb`, its CV moved one standard error towards worse; the Evaluator ranks by it and the hard gate only allows a submission when `cv_lcb` beats the best submitted CV. This came from the first Titanic run, where an ensemble with +0.2 points of CV and the widest fold spread was submitted and lost 5 passengers on the leaderboard.
+- **Greedy ensemble selection** (Caruana et al., 2004) on out-of-fold predictions. It is cheap and often beats the best single model. Its CV is nested (weights re-selected on k-1 folds of the OOF rows, scored on the held-out fold), because scoring it on the rows that chose its weights overstates it (Titanic accuracy: 0.846 in-sample vs 0.840 nested; the honest gain over the best single model is still +1.8 points). On pure-noise members the in-sample estimate reports a gain that does not exist, which the tests check. The in-sample number stays in `params.in_sample_cv`.
 - **Heuristic parity.** Each agent's heuristic is a real baseline. It makes the system testable offline and gives a measurable bar for what the LLM adds: run the same config with `--llm mock` and with `--llm openai`, then compare.
 
 ## Limitations

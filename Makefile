@@ -2,13 +2,17 @@ PY ?= python
 COMP ?= titanic
 LLM ?= openai
 
-.PHONY: setup test demo run dashboard docker-build docker-demo docker-run
+.PHONY: setup test e2e demo run dashboard docker-build docker-demo docker-run
 
 setup:            ## install into the current virtualenv
 	$(PY) -m pip install -r requirements.txt && $(PY) -m pip install -e .
 
 test:             ## offline test suite (no keys needed)
 	$(PY) -m pytest -q
+
+e2e:              ## dashboard browser tests, video under runs/evidence/videos
+	$(PY) -m playwright install chromium
+	$(PY) -m pytest -m e2e --video on --output runs/evidence/videos
 
 demo:             ## offline end-to-end run on a generated competition
 	$(PY) -m kagent demo --task binary

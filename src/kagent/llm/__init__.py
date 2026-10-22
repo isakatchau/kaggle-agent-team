@@ -17,4 +17,15 @@ def make_llm(cfg: LLMConfig, log_path: Path | None = None) -> LLMClient | None:
     raise LLMError(f"unknown provider {cfg.provider}")
 
 
-__all__ = ["LLMClient", "LLMError", "make_llm"]
+def check_llm(llm: LLMClient) -> None:
+    """One tiny JSON call before the run.
+
+    Agents fall back to their heuristics when the LLM fails, which keeps a run alive but would
+    silently turn a misconfigured key, base URL or model name into a heuristic-only run.
+    """
+    answer = llm.complete_json("Reply with a JSON object.", '{"ping": true, "reply_with": {"ok": true}}')
+    if not isinstance(answer, dict):
+        raise LLMError(f"expected a JSON object, got {answer!r:.200}")
+
+
+__all__ = ["LLMClient", "LLMError", "check_llm", "make_llm"]

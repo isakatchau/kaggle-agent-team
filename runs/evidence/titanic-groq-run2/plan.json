@@ -1,0 +1,20 @@
+{
+  "reasoning": "The dataset is the classic Titanic tabular data. The column \"Survived\" is binary (0/1) and is the only target candidate, so the task is binary classification. The sample submission contains two columns: \"PassengerId\" (the identifier) and \"Survived\" with integer values, which matches a label\u2011based submission. The original Kaggle Titanic competition is scored by simple accuracy, so the appropriate metric is \"accuracy\". The identifier column is \"PassengerId\" and the target column is \"Survived\". For an initial modelling round, tree\u2011based models that handle mixed numeric/categorical data and missing values well are suitable, as well as a linear model for a baseline. Hence we list all available model families. Risks include: moderate class imbalance (\u224838% survived), missing values in \"Age\" (\u224820%) and \"Cabin\" (\u224877%), and several high\u2011cardinality string columns (Name, Ticket, Cabin) that need proper encoding to avoid leakage or overfitting.",
+  "task": "binary",
+  "metric": "accuracy",
+  "target": "Survived",
+  "id_column": "PassengerId",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees",
+    "linear"
+  ],
+  "risks": [
+    "class imbalance",
+    "missing values in Age and Cabin",
+    "high\u2011cardinality categorical columns (Name, Ticket, Cabin)"
+  ]
+}

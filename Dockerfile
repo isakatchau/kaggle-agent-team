@@ -8,6 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir
 COPY configs ./configs
 COPY dashboard ./dashboard
 COPY tests ./tests
-# Credentials are passed at run time: --env-file .env and -v ~/.kaggle:/root/.kaggle:ro
+# Credentials are passed at run time: --env-file .env (LLM, KAGGLE_API_TOKEN) and -v ~/.kaggle:/root/.kaggle:ro
 ENTRYPOINT ["python", "-m", "kagent"]
 CMD ["demo"]

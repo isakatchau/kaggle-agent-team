@@ -106,6 +106,17 @@ class ExperimentResult:
     feature_importance: dict[str, float] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
     checkpoint: str | None = None
+    metric: str = ""
+
+    @property
+    def cv_se(self) -> float:
+        # folds overlap across repeats, so this understates the true error; it is a ranking penalty
+        return float(np.std(self.fold_scores) / np.sqrt(max(len(self.fold_scores), 1)))
+
+    @property
+    def cv_lcb(self) -> float:
+        sign = 1 if M.GREATER_IS_BETTER.get(self.metric, True) else -1
+        return self.cv_score - sign * self.cv_se
 
     def summary(self) -> dict:
         return {
@@ -114,8 +125,10 @@ class ExperimentResult:
             "iteration": self.iteration,
             "feature_version": self.feature_version,
             "cv_score": round(self.cv_score, 6),
-            # Ensembles are scored once on the full OOF, so they have no fold spread.
-            "cv_std": None if self.model == "ensemble" else round(float(np.std(self.fold_scores)), 6),
+            "cv_std": round(float(np.std(self.fold_scores)), 6),
+            "cv_se": round(self.cv_se, 6),
+            # pessimistic bound, one standard error towards "worse": what the submit gate compares
+            "cv_lcb": round(self.cv_lcb, 6),
             "seconds": round(self.seconds, 1),
             "params": self.params,
             "notes": self.notes,
@@ -183,7 +196,12 @@ def _predict(est, X, task):
 
 def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, model: str,
            params: dict, folds: int, seed: int, log_target: bool = False,
-           checkpoint_dir: Path | None = None) -> ExperimentResult:
+           checkpoint_dir: Path | None = None, repeats: int = 1) -> ExperimentResult:
+    """K-fold CV, optionally repeated with new shuffles.
+
+    With repeats, every row gets one OOF prediction per repeat and they are averaged, as are
+    the test predictions of all folds x repeats models. fold_scores has folds x repeats entries.
+    """
     params, notes = clip_params(model, params)
     t0 = time.time()
     cat_cols = fm.categorical
@@ -196,25 +214,26 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
     oof = np.zeros(shape)
     test_pred = np.zeros((len(X_test), n_classes) if n_classes else (len(X_test),))
 
-    splitter = (StratifiedKFold if task != "regression" else KFold)(folds, shuffle=True, random_state=seed)
+    split_cls = StratifiedKFold if task != "regression" else KFold
     fold_scores, fitted, importances = [], [], []
     y_fit = np.log1p(y) if (log_target and task == "regression") else y
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        for tr, va in splitter.split(X, y):
-            est = _estimator(model, task, params, cat_cols, num_cols, seed)
-            est.fit(X.iloc[tr], y_fit[tr])
-            p_va = _predict(est, X.iloc[va], task)
-            p_te = _predict(est, X_test, task)
-            if log_target and task == "regression":
-                p_va, p_te = np.expm1(p_va), np.expm1(p_te)
-            oof[va] = p_va
-            test_pred += p_te / folds
-            fold_scores.append(M.score(metric, y[va], p_va))
-            fitted.append(est)
-            if hasattr(est, "feature_importances_"):
-                importances.append(est.feature_importances_)
+        for r in range(repeats):
+            for tr, va in split_cls(folds, shuffle=True, random_state=seed + r).split(X, y):
+                est = _estimator(model, task, params, cat_cols, num_cols, seed + r)
+                est.fit(X.iloc[tr], y_fit[tr])
+                p_va = _predict(est, X.iloc[va], task)
+                p_te = _predict(est, X_test, task)
+                if log_target and task == "regression":
+                    p_va, p_te = np.expm1(p_va), np.expm1(p_te)
+                oof[va] += p_va / repeats
+                test_pred += p_te / (folds * repeats)
+                fold_scores.append(M.score(metric, y[va], p_va))
+                fitted.append(est)
+                if hasattr(est, "feature_importances_"):
+                    importances.append(est.feature_importances_)
 
     importance = {}
     if importances:
@@ -231,41 +250,60 @@ def run_cv(fm: FeatureMatrix, y: np.ndarray, task: str, metric: str, name: str, 
     return ExperimentResult(
         name=name, model=model, params=params, cv_score=M.score(metric, y, oof),
         fold_scores=fold_scores, oof=oof, test_pred=test_pred, seconds=time.time() - t0,
-        feature_importance=importance, notes=notes, checkpoint=ckpt,
+        feature_importance=importance, notes=notes, checkpoint=ckpt, metric=metric,
     )
 
 
-def blend(results: list[ExperimentResult], y: np.ndarray, metric: str, name: str,
-          max_steps: int = 20) -> ExperimentResult:
-    """Greedy forward ensemble selection with replacement (Caruana et al., 2004).
-
-    Starts from the best single model and repeatedly adds whichever member most
-    improves the out-of-fold score of the running average; stops when nothing
-    helps. Weights are the selection counts. Selection uses OOF predictions, so
-    the reported CV is mildly optimistic; the evaluator sees it as a candidate
-    like any other.
-    """
+def _greedy(oofs: list[np.ndarray], y: np.ndarray, metric: str, max_steps: int) -> dict[int, float]:
+    """Greedy forward selection with replacement on these rows; returns member index -> weight."""
     sign = 1 if M.GREATER_IS_BETTER[metric] else -1
-    ranked = sorted(results, key=lambda r: -sign * r.cv_score)
-    counts = {ranked[0].name: 1}
-    total = ranked[0].oof.astype(float).copy()
+    first = max(range(len(oofs)), key=lambda i: sign * M.score(metric, y, oofs[i]))
+    counts = {first: 1}
+    total = oofs[first].astype(float).copy()
     best = M.score(metric, y, total)
-    by_name = {r.name: r for r in ranked}
     for _ in range(max_steps):
         n = sum(counts.values())
-        trial = [(M.score(metric, y, (total + r.oof) / (n + 1)), r) for r in ranked]
-        score, pick = max(trial, key=lambda t: sign * t[0])
+        score, pick = max(((M.score(metric, y, (total + o) / (n + 1)), i) for i, o in enumerate(oofs)),
+                          key=lambda t: sign * t[0])
         if sign * score <= sign * best + 1e-7:
             break
-        best, total = score, total + pick.oof
-        counts[pick.name] = counts.get(pick.name, 0) + 1
-
+        best, total = score, total + oofs[pick]
+        counts[pick] = counts.get(pick, 0) + 1
     n = sum(counts.values())
-    weights = {k: round(v / n, 3) for k, v in counts.items()}
-    oof = sum(by_name[k].oof * w for k, w in weights.items())
-    test = sum(by_name[k].test_pred * w for k, w in weights.items())
+    return {i: c / n for i, c in counts.items()}
+
+
+def blend(results: list[ExperimentResult], y: np.ndarray, metric: str, name: str,
+          max_steps: int = 20, folds: int = 5, seed: int = 0) -> ExperimentResult:
+    """Greedy forward ensemble selection with replacement (Caruana et al., 2004).
+
+    Starts from the best member and repeatedly adds whichever one most improves the
+    out-of-fold score of the running average; stops when nothing helps. Weights are the
+    selection counts, chosen on all OOF rows.
+
+    Scoring the ensemble on the rows its weights were chosen on overstates it, most on
+    small data with a discrete metric (Titanic accuracy: 0.846 in-sample vs 0.840 nested).
+    So the reported CV is nested: weights are re-selected on k-1 folds of the OOF
+    rows and scored on the held-out fold. The in-sample number is kept in params.
+    """
+    oofs = [r.oof for r in results]
+
+    def mix(weights: dict[int, float], preds: list[np.ndarray]) -> np.ndarray:
+        return sum(preds[i] * w for i, w in weights.items())
+
+    nested = np.zeros_like(oofs[0], dtype=float)
+    fold_scores = []
+    for tr, va in KFold(folds, shuffle=True, random_state=seed).split(oofs[0]):
+        w = _greedy([o[tr] for o in oofs], y[tr], metric, max_steps)
+        nested[va] = mix(w, oofs)[va]
+        fold_scores.append(M.score(metric, y[va], nested[va]))
+
+    weights = _greedy(oofs, y, metric, max_steps)
+    oof = mix(weights, oofs)
+    named = {results[i].name: round(w, 3) for i, w in weights.items()}
     return ExperimentResult(
-        name=name, model="ensemble", params={"weights": weights},
-        cv_score=M.score(metric, y, oof), fold_scores=[M.score(metric, y, oof)],
-        oof=oof, test_pred=test, seconds=0.0,
+        name=name, model="ensemble",
+        params={"weights": named, "in_sample_cv": round(M.score(metric, y, oof), 6)},
+        cv_score=M.score(metric, y, nested), fold_scores=fold_scores,
+        oof=oof, test_pred=mix(weights, [r.test_pred for r in results]), seconds=0.0, metric=metric,
     )

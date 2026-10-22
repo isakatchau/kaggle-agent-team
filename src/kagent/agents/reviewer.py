@@ -52,6 +52,17 @@ class LeaderboardReviewerAgent(Agent[Review]):
         if pct is not None and pct <= ctx["target_percentile"] and d.continue_:
             d = d.model_copy(update={"continue_": False, "next_focus": "stop"})
             notes.append("target percentile reached")
+        rounds = ctx["rounds"]
+        last = rounds[-1] if rounds else {}
+        if (d.continue_ and d.next_focus == last.get("focus") and last.get("best_cv_gain") is not None
+                and last["best_cv_gain"] <= 0):
+            # the same lever just stalled: move to the area left untouched the longest
+            used = {r["focus"]: i for i, r in enumerate(rounds)}
+            other = min((f for f in ("features", "models", "tuning") if f != d.next_focus),
+                        key=lambda f: used.get(f, -1))
+            notes.append(f"focus '{d.next_focus}' stalled last round (CV gain {last['best_cv_gain']}); "
+                         f"switched to '{other}'")
+            d = d.model_copy(update={"next_focus": other})
         if d.continue_ and d.next_focus == "stop":
             d = d.model_copy(update={"continue_": False})
         if not d.continue_ and d.next_focus != "stop":

@@ -1,0 +1,16 @@
+{
+  "best": "it2_ensemble",
+  "checkpoints": [
+    "it2_hgb_tuned",
+    "it2_lgbm_shallow",
+    "it2_lgbm_wide"
+  ],
+  "params": {
+    "weights": {
+      "it2_lgbm_shallow": 0.5,
+      "it2_hgb_tuned": 0.25,
+      "it2_lgbm_wide": 0.25
+    },
+    "in_sample_cv": 0.843996
+  }
+}

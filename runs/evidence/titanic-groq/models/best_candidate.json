@@ -1,0 +1,16 @@
+{
+  "best": "it4_ensemble",
+  "checkpoints": [
+    "it1_lgbm_1",
+    "it3_it3_histgb_1",
+    "it4_it4_rf_1"
+  ],
+  "params": {
+    "weights": {
+      "it1_lgbm_1": 0.5,
+      "it3_it3_histgb_1": 0.25,
+      "it4_it4_rf_1": 0.25
+    },
+    "in_sample_cv": 0.84624
+  }
+}

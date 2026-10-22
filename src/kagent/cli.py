@@ -3,6 +3,7 @@
     python -m kagent run --config configs/competitions/titanic.yaml
     python -m kagent demo                      # offline, no keys needed
     python -m kagent list-playground
+    python -m kagent kaggle auth login         # kaggle CLI with the OS certificate store
 """
 
 from __future__ import annotations
@@ -13,10 +14,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+import truststore
 from dotenv import load_dotenv
 
 from .config import RunConfig
-from .llm import LLMError, make_llm
+from .llm import LLMError, check_llm, make_llm
 from .observability.events import RunLogger
 from .orchestrator.graph import Workspace, run
 from .tools.kaggle import KaggleCLI, OfflineKaggle
@@ -27,8 +29,11 @@ def _execute(cfg: RunConfig, platform, submit: bool, quiet: bool) -> dict:
     logger = RunLogger.create(cfg.runs_dir, cfg.competition, verbose=not quiet)
     try:
         llm = make_llm(cfg.llm, logger.run_dir / "llm_calls.jsonl")
+        if llm is not None:
+            check_llm(llm)
     except LLMError as exc:
-        sys.exit(f"error: {exc}")
+        sys.exit(f"error: {exc}\nCheck OPENAI_API_KEY, OPENAI_BASE_URL and OPENAI_MODEL in .env, "
+                 "or run with --llm mock.")
     ws = Workspace(cfg=cfg, platform=platform, logger=logger, llm=llm, submit_enabled=submit)
     summary = run(ws)
     print("\n" + json.dumps(summary, indent=2))
@@ -64,11 +69,21 @@ def cmd_demo(args) -> None:
     _execute(cfg, OfflineKaggle(root), submit=True, quiet=args.quiet)
 
 
+def _kaggle(*args: str) -> int:
+    return subprocess.run([sys.executable, "-m", "kagent.tools.kaggle_entry", *args], check=False).returncode
+
+
 def cmd_list(args) -> None:
-    subprocess.run(["kaggle", "competitions", "list", "--category", "playground"], check=False)
+    _kaggle("competitions", "list", "--category", "playground")
+
+
+def cmd_kaggle(args) -> None:
+    sys.exit(_kaggle(*args.kaggle_args))
 
 
 def main(argv: list[str] | None = None) -> None:
+    # verify TLS against the OS store: TLS-inspecting antivirus and corporate proxies put their root there
+    truststore.inject_into_ssl()
     p = argparse.ArgumentParser(prog="kagent", description="Multi-agent Kaggle team")
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -93,6 +108,10 @@ def main(argv: list[str] | None = None) -> None:
     d.set_defaults(func=cmd_demo)
 
     sub.add_parser("list-playground", help="list Kaggle playground competitions").set_defaults(func=cmd_list)
+
+    k = sub.add_parser("kaggle", help="the official kaggle CLI, e.g. `kagent kaggle auth login`")
+    k.add_argument("kaggle_args", nargs=argparse.REMAINDER)
+    k.set_defaults(func=cmd_kaggle)
 
     args = p.parse_args(argv)
     args.func(args)

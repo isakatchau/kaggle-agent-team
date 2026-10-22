@@ -1,0 +1,61 @@
+{
+  "reasoning": "High-cardinality text ['Name', 'Ticket']: keep length and leading token, drop raw. Dates [] -> year/month/weekday. Frequency-encode ['Cabin']. log1p skewed ['SibSp', 'Parch', 'Fare']. log_target=False. Reviewer asked for features: ratios among top numerics ['Age', 'Fare', 'Pclass', 'SibSp'], group size [].",
+  "drop_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "log_transform_columns": [
+    "SibSp",
+    "Parch",
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Cabin"
+  ],
+  "text_length_columns": [
+    "Name",
+    "Ticket"
+  ],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": "^\\s*([A-Za-z]+)",
+      "name": "Name_prefix"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^\\s*([A-Za-z]+)",
+      "name": "Ticket_prefix"
+    }
+  ],
+  "ratio_features": [
+    [
+      "Age",
+      "Fare"
+    ],
+    [
+      "Age",
+      "Pclass"
+    ],
+    [
+      "Age",
+      "SibSp"
+    ],
+    [
+      "Fare",
+      "Pclass"
+    ],
+    [
+      "Fare",
+      "SibSp"
+    ],
+    [
+      "Pclass",
+      "SibSp"
+    ]
+  ],
+  "group_size_columns": [],
+  "add_missing_indicators": true,
+  "log_target": false
+}
