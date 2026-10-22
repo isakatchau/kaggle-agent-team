@@ -1,0 +1,20 @@
+{
+  "reasoning": "The dataset is the classic Titanic problem. The target column is \"Survived\" which is binary (0/1), so the task is binary classification. The sample submission contains the id column \"PassengerId\" and a single prediction column \"Survived\" with integer values, indicating the required submission format is a label (hard class). The competition does not specify a custom metric, and the usual Kaggle Titanic competition is evaluated by accuracy, which is one of the allowed metrics. The data shows moderate class imbalance (skew 0.48) but not extreme. Main risks are the high missing rate in \"Age\" (\u224820\u202f%) and especially \"Cabin\" (\u224877\u202f%), plus high\u2011cardinality text fields (\"Name\", \"Ticket\", \"Cabin\") that can cause leakage or over\u2011fitting if not handled properly. Therefore we will start with tree\u2011based models that handle missing values and categorical encoding well, plus a linear model as a baseline. The available model families are lightgbm, hist_gb, random_forest, extra_trees, and linear.",
+  "task": "binary",
+  "metric": "accuracy",
+  "target": "Survived",
+  "id_column": "PassengerId",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees",
+    "linear"
+  ],
+  "risks": [
+    "missing values in Age and Cabin",
+    "high\u2011cardinality text columns (Name, Ticket, Cabin) may cause overfitting",
+    "moderate class imbalance"
+  ]
+}

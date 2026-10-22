@@ -97,6 +97,17 @@ def test_reviewer_cannot_repeat_a_focus_that_just_stalled(logger):
     assert LeaderboardReviewerAgent(llm, logger).decide(ctx).next_focus == "models"
 
 
+def test_reviewer_cannot_stop_after_a_single_round_below_target(logger):
+    llm = ScriptedLLM({"reviewer": {"reasoning": "r", "diagnosis": "d", "continue": False,
+                                    "next_focus": "stop", "suggestions": []}})
+    ctx = {"percentile": 0.81, "target_percentile": 0.2, "rounds": [{"focus": "features", "best_cv_gain": None}],
+           "iterations_left": 3}
+    review = LeaderboardReviewerAgent(llm, logger).decide(ctx)
+    assert review.continue_ and review.next_focus == "models"
+    ctx["rounds"].append({"focus": "models", "best_cv_gain": 0.0})  # two rounds: a plateau may be real
+    assert LeaderboardReviewerAgent(llm, logger).decide(ctx).next_focus == "stop"
+
+
 def test_reviewer_stops_at_target(logger):
     llm = ScriptedLLM({"reviewer": {"reasoning": "r", "diagnosis": "d", "continue": True,
                                     "next_focus": "tuning", "suggestions": []}})

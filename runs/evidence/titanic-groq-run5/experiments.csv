@@ -1,0 +1,6 @@
+name,model,iteration,feature_version,cv_score,cv_std,cv_se,cv_lcb,seconds,params,notes
+it1_lgbm_1,lightgbm,1,1,0.835017,0.020272,0.005234,0.829783,3.8,"{'n_estimators': 800, 'learning_rate': 0.02, 'num_leaves': 31, 'max_depth': -1, 'min_child_samples': 40, 'subsample': 0.8, 'colsample_bytree': 0.8, 'reg_alpha': 0.0, 'reg_lambda': 1.0}",[]
+it1_histgb_1,hist_gb,1,1,0.841751,0.018521,0.004782,0.836969,10.2,"{'max_iter': 800, 'learning_rate': 0.04, 'max_leaf_nodes': 31, 'min_samples_leaf': 40, 'l2_regularization': 0.0}",[]
+it1_rf_1,random_forest,1,1,0.821549,0.015196,0.003924,0.817625,14.3,"{'n_estimators': 500, 'max_depth': 12, 'min_samples_leaf': 5, 'max_features': 0.5}",[]
+it1_et_1,extra_trees,1,1,0.810325,0.018029,0.004655,0.805671,12.1,"{'n_estimators': 500, 'max_depth': 14, 'min_samples_leaf': 5, 'max_features': 0.6}",[]
+it1_ensemble,ensemble,1,1,0.840629,0.01912,0.008551,0.832078,0.0,"{'weights': {'it1_histgb_1': 1.0}, 'in_sample_cv': 0.841751}",[]

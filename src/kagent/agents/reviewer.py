@@ -54,6 +54,12 @@ class LeaderboardReviewerAgent(Agent[Review]):
             notes.append("target percentile reached")
         rounds = ctx["rounds"]
         last = rounds[-1] if rounds else {}
+        target_met = pct is not None and pct <= ctx["target_percentile"]
+        if not d.continue_ and not target_met and ctx["iterations_left"] > 0 and len(rounds) < 2:
+            # one round cannot show a plateau: the LLM stopped a Titanic run after round 1 of 4
+            d = d.model_copy(update={"continue_": True,
+                                     "next_focus": "features" if last.get("focus") != "features" else "models"})
+            notes.append("stop refused: target not reached and a single round cannot show a plateau")
         if (d.continue_ and d.next_focus == last.get("focus") and last.get("best_cv_gain") is not None
                 and last["best_cv_gain"] <= 0):
             # the same lever just stalled: move to the area left untouched the longest

@@ -1,0 +1,20 @@
+{
+  "reasoning": "The profile shows 891 training rows with a binary target column Survived (0/1) and an identifier PassengerId. The sample submission contains PassengerId and Survived as integer labels, indicating the competition expects a label submission (not probabilities). No explicit evaluation metric is given, but the classic Titanic Kaggle competition uses accuracy, which matches the binary nature and label format. Therefore: task = binary, metric = accuracy, target = Survived, id_column = PassengerId, submission_format = label. All listed model families are applicable to tabular binary classification. Risks include moderate class imbalance (Survived proportion ~0.5), substantial missing values in Age (\u224820%) and Cabin (\u224877%), and several high\u2011cardinality string columns (Name, Ticket, Cabin) that can cause overfitting if not encoded properly.",
+  "task": "binary",
+  "metric": "accuracy",
+  "target": "Survived",
+  "id_column": "PassengerId",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees",
+    "linear"
+  ],
+  "risks": [
+    "class imbalance",
+    "missing values in Age and Cabin",
+    "high-cardinality categorical features (Name, Ticket, Cabin)"
+  ]
+}

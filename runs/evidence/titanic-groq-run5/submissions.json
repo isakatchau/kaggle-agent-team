@@ -1,0 +1,11 @@
+[
+  {
+    "iteration": 1,
+    "candidate": "it1_histgb_1",
+    "cv_score": 0.8417508417508418,
+    "lb_score": 0.76315,
+    "percentile": 0.8143926209537069,
+    "file": "runs\\titanic\\20261022T090006Z\\submissions\\it1_histgb_1.csv",
+    "leaderboard_size": 11491
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "reasoning": "Titanic data has several high\u2011cardinality text fields that risk leakage if used raw. We extract the informative parts with regex: Title from Name, TicketPrefix from Ticket, and CabinLetter from Cabin. These reduce cardinality and capture known survival signals (e.g., titles, deck). After extraction we drop the original raw columns to avoid over\u2011fitting. Fare is heavily right\u2011skewed (skew 4.79) so we log\u2011transform it. Ticket and Cabin still have many distinct values; we add frequency encoding for them to give the model a numeric prevalence signal. Groups defined by TicketPrefix and CabinLetter often appear in both train and test (test_seen_pct > 30% for Ticket, >10% for Cabin) and passengers sharing a prefix or deck plausibly share survival outcomes, so we add group\u2011target encoding (mean target of other group members) with a small smoothing of 1 and a minimum group size of 2. We also add group\u2011size columns for these keys to give the model size information. Missing indicators are kept (default true). No datetime columns exist, and we do not need text length features after extracting the key parts. The target is binary, so we do not log\u2011transform it.",
+  "drop_columns": [
+    "Name",
+    "Ticket",
+    "Cabin"
+  ],
+  "log_transform_columns": [
+    "Fare"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Ticket",
+    "Cabin"
+  ],
+  "text_length_columns": [],
+  "regex_features": [
+    {
+      "column": "Name",
+      "pattern": ", (\\w+)\\.",
+      "name": "Title"
+    },
+    {
+      "column": "Ticket",
+      "pattern": "^([A-Za-z\\.\\/]+)",
+      "name": "TicketPrefix"
+    },
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Za-z])",
+      "name": "CabinLetter"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [],
+  "group_target_encoding": [
+    {
+      "keys": [
+        "TicketPrefix"
+      ],
+      "name": "TicketPrefix_GTE",
+      "min_group_size": 2,
+      "smoothing": 1.0
+    },
+    {
+      "keys": [
+        "CabinLetter"
+      ],
+      "name": "CabinLetter_GTE",
+      "min_group_size": 2,
+      "smoothing": 1.0
+    }
+  ],
+  "add_missing_indicators": true,
+  "log_target": false
+}

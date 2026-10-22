@@ -1,0 +1,18 @@
+{
+  "run_id": "20261022T090006Z",
+  "competition": "titanic",
+  "platform": "kaggle",
+  "llm": "groq:openai/gpt-oss-120b",
+  "llm_fallbacks": 1,
+  "metric": "accuracy",
+  "iterations": 1,
+  "experiments": 5,
+  "best_cv": 0.8417508417508418,
+  "best_experiment": "it1_histgb_1",
+  "submissions": 1,
+  "best_lb": 0.76315,
+  "best_percentile": 0.8143926209537069,
+  "target_percentile": 0.2,
+  "minutes": 1.2,
+  "run_dir": "runs\\titanic\\20261022T090006Z"
+}
