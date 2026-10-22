@@ -218,14 +218,31 @@ def build_graph(ws: Workspace):
         if not notebooks:
             return {}
         examples = {c["name"]: c["examples"][:3] for c in ws.profile["columns"] if c["name"] in columns}
-        notes = researcher.decide({
+        base_ctx = {
             "_data": pd.concat([ws.train.drop(columns=[ws.plan.target]), ws.test], ignore_index=True),
             "_attempts": cfg.research_attempts,
             "competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric, "target": ws.plan.target,
             "classes": [str(c) for c in ws.classes] if ws.classes is not None else None,
             "columns": columns, "column_examples": examples,
-            "notebooks": [nb.for_prompt(1100) | {"external_reads": nb.external_reads} for nb in notebooks[:13]],
-        })
+        }
+        # skim everything, then read closely the notebooks where rule-shaped techniques were found:
+        # exact column definitions sit deeper in a notebook than a skim budget reaches
+        notes = researcher.decide(base_ctx | {
+            "notebooks": [nb.for_prompt(1100) | {"external_reads": nb.external_reads} for nb in notebooks[:13]]})
+        focus = [nb for nb in notebooks if nb.ref in researcher.rule_sources][:3]
+        if focus:
+            log.log("tools", "tool_call", f"read closely: {[nb.ref for nb in focus]}")
+            close = researcher.decide(base_ctx | {
+                "reading": "close reading: write the rules these notebooks define, with their exact columns and values",
+                "notebooks": [nb.for_prompt(4000) | {"external_reads": nb.external_reads} for nb in focus]})
+            merged = {json.dumps(r.model_dump(exclude={"name", "source", "reported_public_score"}), sort_keys=True): r
+                      for r in close.rules + notes.rules}
+            names, rules = set(), []
+            for r in merged.values():
+                name = r.name if r.name not in names else f"{r.name}_{len(rules)}"
+                names.add(name)
+                rules.append(r.model_copy(update={"name": name}))
+            notes = notes.model_copy(update={"rules": rules[:6], "techniques": notes.techniques + close.techniques})
         ws.rules = notes.rules
         log.save_json("research.json", {
             "listing": listing, "read": [{"ref": nb.ref, "title": nb.title, "external_reads": nb.external_reads}

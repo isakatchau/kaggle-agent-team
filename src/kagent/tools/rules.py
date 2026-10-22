@@ -73,7 +73,8 @@ def validate_rule(rule: RuleModel, columns: list[str], data: pd.DataFrame | None
     if issues or data is None:
         return issues
     full = _frame(rule, data, data.iloc[:0])
-    issues += [f"derive {r.name}: the regex matches no row" for r in rule.derive if full[r.name].isna().all()]
+    issues += [f"derive {r.name}: the regex {r.pattern!r} matches no row of {r.column}; it takes values like "
+               f"{full[r.column].dropna().astype(str).head(3).tolist()}" for r in rule.derive if full[r.name].isna().all()]
     conds = [c for o in rule.overrides for c in o.when] + [c for o in rule.overrides for alt in o.members_when for c in alt]
     for c in conds:
         if c.op in ("==", "in") and not _mask(full, [c]).any():

@@ -89,6 +89,10 @@ class ResearchAgent(Agent[ResearchNotes]):
 
     _rejected: list = []
 
+    def __init__(self, llm, logger):
+        super().__init__(llm, logger)
+        self.rule_sources: set[str] = set()  # notebooks where rule-shaped techniques were found, valid or not
+
     def guard(self, d: ResearchNotes, ctx: dict) -> tuple[ResearchNotes, list[str]]:
         notes, keep = [], []
         self._rejected = []
@@ -102,8 +106,10 @@ class ResearchAgent(Agent[ResearchNotes]):
             if issues:
                 notes.append(f"rule {rule.name} dropped: {issues}")
                 self._rejected.append({"rule": rule.model_dump(), "problems": issues})
+                self.rule_sources.add(rule.source)
             else:
                 keep.append(rule)
+                self.rule_sources.add(rule.source)
         return d.model_copy(update={"rules": keep[:4]}), notes
 
     def _headline(self, d: ResearchNotes) -> str:
