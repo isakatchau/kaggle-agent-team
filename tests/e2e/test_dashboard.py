@@ -59,20 +59,23 @@ def _open(page, url):
 def test_attempts_table_lists_every_run(page, dashboard_url):
     _open(page, dashboard_url)
     page.get_by_text("Attempts").wait_for()
-    options = page.get_by_test_id("stSelectbox")
-    options.click()
-    listbox = page.get_by_role("listbox")
-    assert listbox.get_by_text("synthetic-binary / 20261021T030536Z").is_visible()
-    assert listbox.get_by_text("synthetic-regression / 20261021T030558Z").is_visible()
+    box = page.get_by_test_id("stSelectbox")
+    for label in ("synthetic-binary / 20261021T030536Z", "synthetic-regression / 20261021T030558Z"):
+        box.click()
+        box.locator("input").fill(label.split(" / ")[0])
+        assert page.get_by_role("option", name=label).is_visible()
+        page.keyboard.press("Escape")
 
 
 def test_selected_run_shows_scores_and_agent_timeline(page, dashboard_url):
     _open(page, dashboard_url)
-    page.get_by_test_id("stSelectbox").click()
-    page.get_by_role("listbox").get_by_text("synthetic-regression / 20261021T030558Z").click()
+    box = page.get_by_test_id("stSelectbox")
+    box.click()
+    box.locator("input").fill("synthetic-regression")  # the option list is virtualised: filter, then pick
+    page.get_by_role("option", name="synthetic-regression / 20261021T030558Z").click()
 
+    page.get_by_text("Best CV (rmsle)").wait_for(timeout=30_000)  # Streamlit reruns after the selection
     metrics = page.get_by_test_id("stMetric")
-    metrics.first.wait_for()
     assert "rmsle" in metrics.nth(0).inner_text().lower()
     assert "top 10.0%" in metrics.nth(2).inner_text()
 
