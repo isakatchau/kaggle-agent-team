@@ -1,0 +1,11 @@
+[
+  {
+    "iteration": 1,
+    "candidate": "it1_rule_WCG Model",
+    "cv_score": 0.8406285072951739,
+    "lb_score": 0.79425,
+    "percentile": 0.11026020363762945,
+    "file": "runs\\titanic\\20261023T020604Z\\submissions\\it1_rule_WCG Model.csv",
+    "leaderboard_size": 11490
+  }
+]

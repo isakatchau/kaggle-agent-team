@@ -1,0 +1,1115 @@
+{
+  "listing": [
+    {
+      "ref": "alexisbcook/exercise-arithmetic-and-variables",
+      "title": "Exercise: Arithmetic and Variables",
+      "votes": 554182,
+      "list": "votes"
+    },
+    {
+      "ref": "alexisbcook/titanic-tutorial",
+      "title": "Titanic Tutorial",
+      "votes": 61660,
+      "list": "votes"
+    },
+    {
+      "ref": "startupsci/titanic-data-science-solutions",
+      "title": "Titanic Data Science Solutions",
+      "votes": 40146,
+      "list": "votes"
+    },
+    {
+      "ref": "arthurtok/introduction-to-ensembling-stacking-in-python",
+      "title": "Introduction to Ensembling/Stacking in Python",
+      "votes": 15489,
+      "list": "votes"
+    },
+    {
+      "ref": "ldfreeman3/a-data-science-framework-to-achieve-99-accuracy",
+      "title": "A Data Science Framework: To Achieve 99% Accuracy",
+      "votes": 14000,
+      "list": "votes"
+    },
+    {
+      "ref": "mrisdal/exploring-survival-on-the-titanic",
+      "title": "Exploring Survival on the Titanic",
+      "votes": 11046,
+      "list": "votes"
+    },
+    {
+      "ref": "gusthema/titanic-competition-w-tensorflow-decision-forests",
+      "title": "Titanic competition w/ TensorFlow Decision Forests",
+      "votes": 9085,
+      "list": "votes"
+    },
+    {
+      "ref": "omarelgabry/a-journey-through-titanic",
+      "title": "A Journey through Titanic",
+      "votes": 7522,
+      "list": "votes"
+    },
+    {
+      "ref": "helgejo/an-interactive-data-science-tutorial",
+      "title": "An Interactive Data Science Tutorial",
+      "votes": 6378,
+      "list": "votes"
+    },
+    {
+      "ref": "ash316/eda-to-prediction-dietanic",
+      "title": "EDA To Prediction(DieTanic)",
+      "votes": 6347,
+      "list": "votes"
+    },
+    {
+      "ref": "agileteam/py-t1-1-iqr-expected-questions",
+      "title": "[py] T1-1. \uc774\uc0c1\uce58\ub97c \ucc3e\uc544\ub77c(IQR\ud65c\uc6a9) Expected Questions",
+      "votes": 6160,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/upura-kaggle-tutorial-01-first-submission",
+      "title": "upura-kaggle-tutorial-01: first submission",
+      "votes": 6020,
+      "list": "votes"
+    },
+    {
+      "ref": "jhoward/linear-model-and-neural-net-from-scratch",
+      "title": "Linear model and neural net from scratch",
+      "votes": 5960,
+      "list": "votes"
+    },
+    {
+      "ref": "yassineghouzam/titanic-top-4-with-ensemble-modeling",
+      "title": "Titanic Top 4% with ensemble modeling",
+      "votes": 5816,
+      "list": "votes"
+    },
+    {
+      "ref": "gunesevitan/titanic-advanced-feature-engineering-tutorial",
+      "title": "Titanic - Advanced Feature Engineering Tutorial",
+      "votes": 5541,
+      "list": "votes"
+    },
+    {
+      "ref": "nadintamer/titanic-survival-predictions-beginner",
+      "title": "Titanic Survival Predictions (Beginner)",
+      "votes": 5197,
+      "list": "votes"
+    },
+    {
+      "ref": "kenjee/titanic-project-example",
+      "title": "Titanic Project Example",
+      "votes": 4367,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/python-kaggle-start-book-ch02-01",
+      "title": "python-kaggle-start-book-ch02_01",
+      "votes": 4158,
+      "list": "votes"
+    },
+    {
+      "ref": "jhoward/how-random-forests-really-work",
+      "title": "How random forests really work",
+      "votes": 3574,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-1-getting-started",
+      "title": "Python for Data 1: Getting Started",
+      "votes": 3500,
+      "list": "votes"
+    },
+    {
+      "ref": "agileteam/t2-1-titanic-simple-baseline",
+      "title": "T2-1. \ud0c0\uc774\ud0c0\ub2c9(Titanic) Simple Baseline",
+      "votes": 3368,
+      "list": "votes"
+    },
+    {
+      "ref": "masumrumi/a-statistical-analysis-ml-workflow-of-titanic",
+      "title": "A Statistical Analysis & ML workflow of Titanic",
+      "votes": 3071,
+      "list": "votes"
+    },
+    {
+      "ref": "pavansanagapati/knowledge-graph-nlp-tutorial-bert-spacy-nltk",
+      "title": "Knowledge Graph & NLP Tutorial-(BERT,spaCy,NLTK)",
+      "votes": 2900,
+      "list": "votes"
+    },
+    {
+      "ref": "sinakhorami/titanic-best-working-classifier",
+      "title": "Titanic best working Classifier",
+      "votes": 2762,
+      "list": "votes"
+    },
+    {
+      "ref": "mnassrib/titanic-logistic-regression-with-python",
+      "title": "Titanic: logistic regression with python",
+      "votes": 2725,
+      "list": "votes"
+    },
+    {
+      "ref": "jeffd23/scikit-learn-ml-from-start-to-finish",
+      "title": "Scikit-Learn ML from Start to Finish",
+      "votes": 2701,
+      "list": "votes"
+    },
+    {
+      "ref": "jhoward/why-you-should-use-a-framework",
+      "title": "Why you should use a framework",
+      "votes": 2451,
+      "list": "votes"
+    },
+    {
+      "ref": "brendan45774/titanic-top-solution",
+      "title": "Titanic Top Solution",
+      "votes": 2311,
+      "list": "votes"
+    },
+    {
+      "ref": "hiteshp/head-start-for-data-scientist",
+      "title": "Head Start for Data Scientist",
+      "votes": 2200,
+      "list": "votes"
+    },
+    {
+      "ref": "subinium/simple-matplotlib-visualization-tips",
+      "title": "Simple Matplotlib & Visualization Tips \ud83d\udca1",
+      "votes": 2115,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-2-python-arithmetic",
+      "title": "Python for Data 2: Python Arithmetic",
+      "votes": 2078,
+      "list": "votes"
+    },
+    {
+      "ref": "benhamner/random-forest-benchmark-r",
+      "title": "Random Forest Benchmark (R)",
+      "votes": 1878,
+      "list": "votes"
+    },
+    {
+      "ref": "nareshbhat/outlier-the-silent-killer",
+      "title": "Outlier!!! The Silent Killer",
+      "votes": 1865,
+      "list": "votes"
+    },
+    {
+      "ref": "akhabash/cheatsheet-70-ggplot-charts",
+      "title": "Cheatsheet 70+ ggplot Charts \ud83d\udcca",
+      "votes": 1772,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/upura-kaggle-tutorial-02-overview",
+      "title": "upura-kaggle-tutorial-02-overview",
+      "votes": 1745,
+      "list": "votes"
+    },
+    {
+      "ref": "tarunpaparaju/titanic-competition-how-top-lb-got-their-score",
+      "title": "Titanic Competition : How top LB got their score",
+      "votes": 1740,
+      "list": "votes"
+    },
+    {
+      "ref": "dmilla/introduction-to-decision-trees-titanic-dataset",
+      "title": "Introduction to Decision Trees (Titanic dataset)",
+      "votes": 1672,
+      "list": "votes"
+    },
+    {
+      "ref": "pmarcelino/data-analysis-and-feature-extraction-with-python",
+      "title": "Data analysis and feature extraction with Python",
+      "votes": 1597,
+      "list": "votes"
+    },
+    {
+      "ref": "headsortails/pytanic",
+      "title": "Pytanic",
+      "votes": 1464,
+      "list": "votes"
+    },
+    {
+      "ref": "parulpandey/a-guide-to-handling-missing-values-in-python",
+      "title": "A Guide to Handling Missing values in Python ",
+      "votes": 1365,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-3-basic-data-types",
+      "title": "Python for Data 3: Basic Data Types",
+      "votes": 1359,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/upura-kaggle-tutorial-03-feature-engineering",
+      "title": "upura-kaggle-tutorial-03-feature-engineering",
+      "votes": 1356,
+      "list": "votes"
+    },
+    {
+      "ref": "dansbecker/partial-dependence-plots",
+      "title": "Partial Dependence Plots",
+      "votes": 1338,
+      "list": "votes"
+    },
+    {
+      "ref": "imoore/titanic-the-only-notebook-you-need-to-see",
+      "title": "Titanic - The Only Notebook You Need To See",
+      "votes": 1284,
+      "list": "votes"
+    },
+    {
+      "ref": "kanncaa1/dataiteam-titanic-eda",
+      "title": "DataiTeam Titanic EDA",
+      "votes": 1248,
+      "list": "votes"
+    },
+    {
+      "ref": "faressayah/decision-trees-random-forest-for-beginners",
+      "title": "\ud83c\udf33 Decision Trees & Random Forest for Beginners",
+      "votes": 1240,
+      "list": "votes"
+    },
+    {
+      "ref": "parulpandey/10-simple-hacks-to-speed-up-your-data-analysis",
+      "title": "10 Simple hacks to speed up your Data Analysis ",
+      "votes": 1223,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/upura-kaggle-tutorial-04-lightgbm",
+      "title": "upura-kaggle-tutorial-04-lightgbm",
+      "votes": 1195,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/python-kaggle-start-book-ch02-03",
+      "title": "python-kaggle-start-book-ch02_03",
+      "votes": 1166,
+      "list": "votes"
+    },
+    {
+      "ref": "niklasdonges/end-to-end-project-with-python",
+      "title": "End to End Project with Python",
+      "votes": 1155,
+      "list": "votes"
+    },
+    {
+      "ref": "poonaml/titanic-survival-prediction-end-to-end-ml-pipeline",
+      "title": "Titanic Survival Prediction End to End ML Pipeline",
+      "votes": 1089,
+      "list": "votes"
+    },
+    {
+      "ref": "erikbruin/titanic-2nd-degree-families-and-majority-voting",
+      "title": "Titanic: 2nd degree families and majority voting",
+      "votes": 1086,
+      "list": "votes"
+    },
+    {
+      "ref": "parvathicg/titanic",
+      "title": "Titanic",
+      "votes": 1079,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-5-lists",
+      "title": "Python for Data 5: Lists",
+      "votes": 1067,
+      "list": "votes"
+    },
+    {
+      "ref": "shivamb/semi-supervised-classification-using-autoencoders",
+      "title": "Semi Supervised Classification using AutoEncoders",
+      "votes": 1060,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-4-variables",
+      "title": "Python for Data 4: Variables",
+      "votes": 1030,
+      "list": "votes"
+    },
+    {
+      "ref": "cdeotte/titanic-wcg-xgboost-0-84688",
+      "title": "Titanic WCG+XGBoost [0.84688]",
+      "votes": 1028,
+      "list": "votes"
+    },
+    {
+      "ref": "pavansanagapati/ensemble-learning-techniques-tutorial",
+      "title": "Ensemble Learning Techniques Tutorial",
+      "votes": 1024,
+      "list": "votes"
+    },
+    {
+      "ref": "pedrodematos/titanic-a-complete-approach-for-data-scientists",
+      "title": "Titanic: A complete approach for Data Scientists",
+      "votes": 964,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/py310-python-kaggle-start-book-ch02-01",
+      "title": "[py310] python-kaggle-start-book-ch02_01",
+      "votes": 925,
+      "list": "votes"
+    },
+    {
+      "ref": "zlatankr/titanic-random-forest-82-78",
+      "title": "Titanic Random Forest: 82.78%",
+      "votes": 923,
+      "list": "votes"
+    },
+    {
+      "ref": "vinothan/titanic-model-with-90-accuracy",
+      "title": "Titanic Model with 90% accuracy",
+      "votes": 909,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/python-kaggle-start-book-ch02-05",
+      "title": "python-kaggle-start-book-ch02_05",
+      "votes": 888,
+      "list": "votes"
+    },
+    {
+      "ref": "datacanary/xgboost-example-python",
+      "title": "XGBoost example (Python)",
+      "votes": 887,
+      "list": "votes"
+    },
+    {
+      "ref": "werooring/ch0-titanic-basic-solution-using-randomforest",
+      "title": "[ch0] Titanic Basic Solution Using RandomForest",
+      "votes": 883,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/upura-kaggle-tutorial-05-tuning",
+      "title": "upura-kaggle-tutorial-05-tuning",
+      "votes": 856,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/python-kaggle-start-book-ch02-04",
+      "title": "python-kaggle-start-book-ch02_04",
+      "votes": 847,
+      "list": "votes"
+    },
+    {
+      "ref": "soham1024/titanic-data-science-eda-with-meme-solution",
+      "title": "Titanic Data Science EDA with meme+Solution",
+      "votes": 817,
+      "list": "votes"
+    },
+    {
+      "ref": "parulpandey/useful-python-libraries-for-data-science",
+      "title": "Useful Python libraries for Data Science",
+      "votes": 793,
+      "list": "votes"
+    },
+    {
+      "ref": "subinium/awesome-visualization-with-titanic-dataset",
+      "title": "\ud83d\udd76 Awesome Visualization with Titanic Dataset\ud83d\udcca",
+      "votes": 782,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/upura-kaggle-tutorial-06-validation",
+      "title": "upura-kaggle-tutorial-06-validation",
+      "votes": 755,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-8-numpy-arrays",
+      "title": "Python for Data 8: Numpy Arrays",
+      "votes": 755,
+      "list": "votes"
+    },
+    {
+      "ref": "kabure/titanic-eda-model-pipeline-keras-nn",
+      "title": "Titanic [EDA] + Model Pipeline + Keras NN",
+      "votes": 750,
+      "list": "votes"
+    },
+    {
+      "ref": "nkitgupta/advance-data-preprocessing",
+      "title": "Advance Data Preprocessing",
+      "votes": 746,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-6-tuples-and-strings",
+      "title": "Python for Data 6: Tuples and Strings",
+      "votes": 738,
+      "list": "votes"
+    },
+    {
+      "ref": "funxexcel/titanic-basic-solution-using-adaboost",
+      "title": "Titanic Basic Solution using Adaboost",
+      "votes": 730,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-9-pandas-dataframes",
+      "title": "Python for Data 9: Pandas DataFrames",
+      "votes": 713,
+      "list": "votes"
+    },
+    {
+      "ref": "yildirimarda/decision-tree-visualization-submission",
+      "title": "Decision Tree Visualization & Submission",
+      "votes": 713,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-14-data-exploration-and-cleaning",
+      "title": "Python for Data 14: Data Exploration and Cleaning",
+      "votes": 710,
+      "list": "votes"
+    },
+    {
+      "ref": "preejababu/titanic-data-science-solutions",
+      "title": "Titanic Data Science Solutions",
+      "votes": 703,
+      "list": "votes"
+    },
+    {
+      "ref": "pavansanagapati/14-simple-tips-to-save-ram-memory-for-1-gb-dataset",
+      "title": "14 Simple Tips to save RAM memory for 1+GB dataset",
+      "votes": 702,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-analysis-index",
+      "title": "Python for Data Analysis: Index",
+      "votes": 700,
+      "list": "votes"
+    },
+    {
+      "ref": "chanchal24/titanic-dataset",
+      "title": "Titanic Dataset",
+      "votes": 683,
+      "list": "votes"
+    },
+    {
+      "ref": "andreshg/automatic-eda-libraries-comparisson",
+      "title": "\ud83d\udcca Automatic EDA Libraries \ud83d\udcda Comparisson",
+      "votes": 681,
+      "list": "votes"
+    },
+    {
+      "ref": "konstantinmasich/titanic-0-82-0-83",
+      "title": "Titanic [0.82] - [0.83]",
+      "votes": 680,
+      "list": "votes"
+    },
+    {
+      "ref": "sandragracenelson/titanic-dataset-prediction",
+      "title": "Titanic dataset prediction",
+      "votes": 676,
+      "list": "votes"
+    },
+    {
+      "ref": "frtgnn/pycaret-introduction-classification-regression",
+      "title": "PyCaret Introduction (Classification & Regression)",
+      "votes": 667,
+      "list": "votes"
+    },
+    {
+      "ref": "tientd95/pyspark-for-data-science",
+      "title": "Pyspark for Data Science",
+      "votes": 640,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-10-reading-and-writing-data",
+      "title": "Python for Data 10: Reading and Writing Data",
+      "votes": 631,
+      "list": "votes"
+    },
+    {
+      "ref": "sishihara/python-kaggle-start-book-ch02-06",
+      "title": "python-kaggle-start-book-ch02_06",
+      "votes": 629,
+      "list": "votes"
+    },
+    {
+      "ref": "fatmakursun/titanic-classification-models",
+      "title": "Titanic (Classification Models)",
+      "votes": 629,
+      "list": "votes"
+    },
+    {
+      "ref": "eraaz1/a-comprehensive-guide-to-titanic-machine-learning",
+      "title": "A Comprehensive Guide to Titanic Machine Learning ",
+      "votes": 616,
+      "list": "votes"
+    },
+    {
+      "ref": "pliptor/how-am-i-doing-with-my-score",
+      "title": "How am I doing with my score?",
+      "votes": 616,
+      "list": "votes"
+    },
+    {
+      "ref": "hamelg/python-for-data-7-dictionaries-and-sets",
+      "title": "Python for Data 7: Dictionaries and Sets",
+      "votes": 614,
+      "list": "votes"
+    },
+    {
+      "ref": "jamesleslie/titanic-neural-network-for-beginners",
+      "title": "Titanic: Neural Network for Beginners",
+      "votes": 613,
+      "list": "votes"
+    },
+    {
+      "ref": "joshuajhchoi/titanic-tutorial-for-beginners-2020",
+      "title": "Titanic Tutorial for Beginners (2020)",
+      "votes": 606,
+      "list": "votes"
+    },
+    {
+      "ref": "rochellesilva/simple-tutorial-for-beginners",
+      "title": "Simple tutorial for Beginners",
+      "votes": 590,
+      "list": "votes"
+    },
+    {
+      "ref": "szamil/where-is-my-output-file",
+      "title": "Where is my output file?",
+      "votes": 585,
+      "list": "votes"
+    },
+    {
+      "ref": "pliptor/divide-and-conquer-0-82296",
+      "title": "Divide and Conquer [0.82296]",
+      "votes": 583,
+      "list": "votes"
+    },
+    {
+      "ref": "chapagain/titanic-solution-a-beginner-s-guide",
+      "title": "Titanic Solution: A Beginner's Guide",
+      "votes": 570,
+      "list": "votes"
+    },
+    {
+      "ref": "jafarib/titanic-competition-how-to-get-top-score-100",
+      "title": "Titanic-Competition : How to get top score 100%",
+      "votes": 373,
+      "list": "score"
+    },
+    {
+      "ref": "nikitadalela/be-in-top-10-submissions",
+      "title": "Be in Top 10 submissions",
+      "votes": 94,
+      "list": "score"
+    },
+    {
+      "ref": "ahmedmurad1990/titanic-competition-how-to-get-top-score-100",
+      "title": "Titanic-Competition : How to get top score 100%",
+      "votes": 90,
+      "list": "score"
+    },
+    {
+      "ref": "iamacoderyeah/ensemble",
+      "title": "Ensemble",
+      "votes": 60,
+      "list": "score"
+    },
+    {
+      "ref": "rohitgadhwar/preprocessing-transformation-pipeline",
+      "title": "preprocessing transformation pipeline",
+      "votes": 46,
+      "list": "score"
+    },
+    {
+      "ref": "ismikhail/titanic-top-solution",
+      "title": "Titanic Top Solution",
+      "votes": 63,
+      "list": "score"
+    },
+    {
+      "ref": "bennheinz/be-in-top-10-submissions",
+      "title": "Be in Top 10 submissions",
+      "votes": 87,
+      "list": "score"
+    },
+    {
+      "ref": "niteshranjansingh/titanic-top-solution-which-leads-you-into-top-2",
+      "title": "Titanic Top Solution which leads you into Top 2%",
+      "votes": 202,
+      "list": "score"
+    },
+    {
+      "ref": "boss0ayush/extensive-eda-plus-top2",
+      "title": "Extensive_EDA_plus_top2%",
+      "votes": 154,
+      "list": "score"
+    },
+    {
+      "ref": "shivamkc3/titanic-ml-top",
+      "title": "Titanic_ML_Top",
+      "votes": 51,
+      "list": "score"
+    },
+    {
+      "ref": "dfarinha/titanic-version-2",
+      "title": "Titanic - Version 2",
+      "votes": 78,
+      "list": "score"
+    },
+    {
+      "ref": "victorsullivan/titanic-records",
+      "title": "Titanic Records",
+      "votes": 100,
+      "list": "score"
+    },
+    {
+      "ref": "sabbir108/titanic-records",
+      "title": "Titanic Records",
+      "votes": 30,
+      "list": "score"
+    },
+    {
+      "ref": "nvidiartx/notebookc409cc5104",
+      "title": "notebookc409cc5104",
+      "votes": 18,
+      "list": "score"
+    },
+    {
+      "ref": "luongduongminh/titanic-machine-learning-from-disaster",
+      "title": "Titanic - Machine Learning from Disaster",
+      "votes": 82,
+      "list": "score"
+    },
+    {
+      "ref": "antoninabugayova/score1",
+      "title": "\u0442\u0438\u0442\u0430\u043d\u0438\u043a score1",
+      "votes": 31,
+      "list": "score"
+    },
+    {
+      "ref": "osemds/first-titanic-and-also-kaggle-attempt",
+      "title": "First Titanic (and also Kaggle) attempt",
+      "votes": 242,
+      "list": "score"
+    },
+    {
+      "ref": "profahmadhussein2010/titanic-machine-learning-from-disaster",
+      "title": "Titanic - Machine Learning from Disaster",
+      "votes": 99,
+      "list": "score"
+    },
+    {
+      "ref": "keerthirudrakshula/logistic-regression-titanic-using-pca",
+      "title": "Logistic Regression-Titanic using PCA",
+      "votes": 96,
+      "list": "score"
+    },
+    {
+      "ref": "yazanmajzob/auto-eda",
+      "title": " Auto EDA ",
+      "votes": 45,
+      "list": "score"
+    },
+    {
+      "ref": "prosperalikizang/my-titanic-sub",
+      "title": "My Titanic Sub",
+      "votes": 67,
+      "list": "score"
+    },
+    {
+      "ref": "sabrinazuraimi/titanic-notebook",
+      "title": "Titanic Notebook",
+      "votes": 110,
+      "list": "score"
+    },
+    {
+      "ref": "maryragozina/notebook9849f51564",
+      "title": "notebook9849f51564",
+      "votes": 29,
+      "list": "score"
+    },
+    {
+      "ref": "evgenypotapov/notebook602c8b4de2",
+      "title": "notebook602c8b4de2",
+      "votes": 42,
+      "list": "score"
+    },
+    {
+      "ref": "vivovinco/titanic-real-1-0",
+      "title": "\u203b Titanic - Real 1.0",
+      "votes": 303,
+      "list": "score"
+    },
+    {
+      "ref": "ngphngnam2002/titanic",
+      "title": "Titanic",
+      "votes": 8,
+      "list": "score"
+    }
+  ],
+  "read": [
+    {
+      "ref": "startupsci/titanic-data-science-solutions",
+      "title": "Titanic Data Science Solutions",
+      "external_reads": []
+    },
+    {
+      "ref": "arthurtok/introduction-to-ensembling-stacking-in-python",
+      "title": "Introduction to Ensembling/Stacking in Python",
+      "external_reads": []
+    },
+    {
+      "ref": "yassineghouzam/titanic-top-4-with-ensemble-modeling",
+      "title": "Titanic Top 4% with ensemble modeling",
+      "external_reads": []
+    },
+    {
+      "ref": "cdeotte/titanic-wcg-xgboost-0-84688",
+      "title": "Titanic WCG+XGBoost [0.84688]",
+      "external_reads": [
+        "../input/top-6-titanic-model/top6.csv"
+      ]
+    },
+    {
+      "ref": "cdeotte/titanic-using-name-only-0-81818",
+      "title": "",
+      "external_reads": [
+        "../input/kaggle-titanic-leaderboard-may-15-2018/leaderboard.csv"
+      ]
+    },
+    {
+      "ref": "cdeotte/titantic-mega-model-0-84210",
+      "title": "",
+      "external_reads": [
+        "../input/top-6-titanic-model/top6.csv"
+      ]
+    },
+    {
+      "ref": "gunesevitan/titanic-advanced-feature-engineering-tutorial",
+      "title": "Titanic - Advanced Feature Engineering Tutorial",
+      "external_reads": []
+    },
+    {
+      "ref": "ldfreeman3/a-data-science-framework-to-achieve-99-accuracy",
+      "title": "A Data Science Framework: To Achieve 99% Accuracy",
+      "external_reads": []
+    },
+    {
+      "ref": "mrisdal/exploring-survival-on-the-titanic",
+      "title": "Exploring Survival on the Titanic",
+      "external_reads": []
+    },
+    {
+      "ref": "tarunpaparaju/titanic-competition-how-top-lb-got-their-score",
+      "title": "Titanic Competition : How top LB got their score",
+      "external_reads": [
+        "../input/titanic-test-data/titanic.csv"
+      ]
+    },
+    {
+      "ref": "ash316/eda-to-prediction-dietanic",
+      "title": "EDA To Prediction(DieTanic)",
+      "external_reads": []
+    },
+    {
+      "ref": "headsortails/pytanic",
+      "title": "Pytanic",
+      "external_reads": []
+    }
+  ],
+  "techniques": [
+    {
+      "name": "Ensemble modeling",
+      "summary": "Combines multiple classifiers (RandomForest, GradientBoosting, etc.) to improve prediction accuracy.",
+      "reported_public_score": null,
+      "source": "yassineghouzam/titanic-top-4-with-ensemble-modeling"
+    },
+    {
+      "name": "Stacking",
+      "summary": "Uses predictions from base models as features for a second-level model.",
+      "reported_public_score": null,
+      "source": "arthurtok/introduction-to-ensembling-stacking-in-python"
+    },
+    {
+      "name": "Feature engineering",
+      "summary": "Creates new features like Title, Family Size, and Cabin from raw columns.",
+      "reported_public_score": null,
+      "source": "gunesevitan/titanic-advanced-feature-engineering-tutorial"
+    },
+    {
+      "name": "XGBoost with WCG",
+      "summary": "Uses XGBoost combined with a previously top-scoring model to improve accuracy.",
+      "reported_public_score": 0.84688,
+      "source": "cdeotte/titanic-wcg-xgboost-0-84688"
+    },
+    {
+      "name": "Gender Model",
+      "summary": "Predicts females survive and males perish, achieving 76.6% public score.",
+      "reported_public_score": 0.766,
+      "source": "cdeotte/titanic-using-name-only-0-81818"
+    },
+    {
+      "name": "Name Only Model",
+      "summary": "Uses gender, age, and family surname groups to predict survival, scoring 81.8%.",
+      "reported_public_score": 0.81818,
+      "source": "cdeotte/titanic-using-name-only-0-81818"
+    },
+    {
+      "name": "Mega Model",
+      "summary": "Ensemble of top 6 models using complex family group definitions, scoring 84.2%.",
+      "reported_public_score": 0.8421,
+      "source": "cdeotte/titantic-mega-model-0-84210"
+    }
+  ],
+  "rules": [
+    {
+      "name": "Name-Based Family Survival Rule",
+      "derive": [
+        {
+          "column": "Name",
+          "pattern": ",\\s*(\\w+)\\.",
+          "name": "Title"
+        },
+        {
+          "column": "Name",
+          "pattern": "^(.*?),",
+          "name": "Surname"
+        }
+      ],
+      "base_column": "Sex",
+      "overrides": [
+        {
+          "when": [
+            {
+              "column": "Title",
+              "op": "==",
+              "value": "Master"
+            }
+          ],
+          "group_keys": [
+            "Surname"
+          ],
+          "members_when": [],
+          "min_group_size": 2,
+          "if_all": 1,
+          "set_to": 1
+        },
+        {
+          "when": [
+            {
+              "column": "Title",
+              "op": "in",
+              "value": [
+                "Mrs",
+                "Miss"
+              ]
+            }
+          ],
+          "group_keys": [
+            "Surname"
+          ],
+          "members_when": [],
+          "min_group_size": 2,
+          "if_all": 0,
+          "set_to": 0
+        }
+      ],
+      "source": "cdeotte/titanic-using-name-only-0-81818",
+      "reported_public_score": 0.81818
+    },
+    {
+      "name": "Name-based gender and family group rules",
+      "derive": [
+        {
+          "column": "Name",
+          "pattern": ",\\s*(\\w+)\\.",
+          "name": "Title"
+        },
+        {
+          "column": "Name",
+          "pattern": "^(.*?),",
+          "name": "Surname"
+        }
+      ],
+      "base_column": "Sex",
+      "overrides": [
+        {
+          "when": [
+            {
+              "column": "Title",
+              "op": "==",
+              "value": "Master"
+            }
+          ],
+          "group_keys": [
+            "Surname"
+          ],
+          "members_when": [
+            [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss",
+                  "Master",
+                  "Ms",
+                  "Mlle",
+                  "Lady",
+                  "Mme",
+                  "the Countess",
+                  "Dona"
+                ]
+              }
+            ]
+          ],
+          "min_group_size": 2,
+          "if_all": 1,
+          "set_to": 1
+        },
+        {
+          "when": [
+            {
+              "column": "Title",
+              "op": "in",
+              "value": [
+                "Mrs",
+                "Miss",
+                "Ms",
+                "Mlle",
+                "Lady",
+                "Mme",
+                "the Countess",
+                "Dona"
+              ]
+            }
+          ],
+          "group_keys": [
+            "Surname"
+          ],
+          "members_when": [
+            [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss",
+                  "Master",
+                  "Ms",
+                  "Mlle",
+                  "Lady",
+                  "Mme",
+                  "the Countess",
+                  "Dona"
+                ]
+              }
+            ]
+          ],
+          "min_group_size": 2,
+          "if_all": 0,
+          "set_to": 0
+        }
+      ],
+      "source": "cdeotte/titanic-using-name-only-0-81818",
+      "reported_public_score": 0.81818
+    },
+    {
+      "name": "Name-based rule model",
+      "derive": [
+        {
+          "column": "Name",
+          "pattern": ".*?(Mr|Mrs|Miss|Master)\\.",
+          "name": "Title"
+        },
+        {
+          "column": "Name",
+          "pattern": "^(.*?),",
+          "name": "Surname"
+        }
+      ],
+      "base_column": "Sex",
+      "overrides": [
+        {
+          "when": [
+            {
+              "column": "Title",
+              "op": "==",
+              "value": "Master"
+            }
+          ],
+          "group_keys": [
+            "Surname",
+            "Pclass",
+            "Ticket"
+          ],
+          "members_when": [],
+          "min_group_size": 2,
+          "if_all": 1,
+          "set_to": 1
+        },
+        {
+          "when": [
+            {
+              "column": "Title",
+              "op": "==",
+              "value": "Mrs"
+            }
+          ],
+          "group_keys": [
+            "Surname",
+            "Pclass",
+            "Ticket"
+          ],
+          "members_when": [],
+          "min_group_size": 2,
+          "if_all": 0,
+          "set_to": 0
+        }
+      ],
+      "source": "cdeotte/titanic-using-name-only-0-81818",
+      "reported_public_score": 0.81818
+    },
+    {
+      "name": "Gender and Age Rule",
+      "derive": [],
+      "base_column": "Sex",
+      "overrides": [
+        {
+          "when": [
+            {
+              "column": "Sex",
+              "op": "==",
+              "value": "male"
+            },
+            {
+              "column": "Age",
+              "op": "<",
+              "value": 16
+            }
+          ],
+          "group_keys": [
+            "Sex",
+            "Age"
+          ],
+          "members_when": [],
+          "min_group_size": 2,
+          "if_all": 1,
+          "set_to": 1
+        }
+      ],
+      "source": "cdeotte/titanic-using-name-only-0-81818",
+      "reported_public_score": 0.81818
+    }
+  ]
+}

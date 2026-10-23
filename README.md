@@ -147,10 +147,11 @@ Leaderboard positions are where a **new** submission with that score lands on th
 | titanic, run 4 (group target encoding; LLM chose category keys) | accuracy ↑ | 0.8272 | 311/418 | top 93.6% | 3 / 1 | `runs/evidence/titanic-groq-run4` |
 | titanic, run 5 (category keys skipped, heuristic keys used) | accuracy ↑ | 0.8418 | 319/418 | top 84.2% | 1 / 1 | `runs/evidence/titanic-groq-run5` |
 | titanic, run 6 (`group_override` + one-SE selection) | accuracy ↑ | 0.8361 (0.8429) | 311/418 | top 93.6% | 4 / 1 (2nd hit the daily limit) | `runs/evidence/titanic-groq-run6` |
+| **titanic, run 7 (research: notebooks + research memory; typed rules)** | accuracy ↑ | 0.8406 (0.8451) | **332/418 (0.79425)** | **top 11.0% of 11,490 (target 20%: reached)** | 1 / 1 | `runs/evidence/titanic-groq-run7` |
 | titanic (heuristic agents, `--no-submit`) | accuracy ↑ | (0.8418) | | | 4 / 0 | `runs/evidence/titanic-heuristic` |
 | house-prices-advanced-regression-techniques | RMSLE ↓ | not run | | | | |
 
-**Target: not reached by the agent team.** Best agent result: 327/418 (top 27.4%). Nothing used leaked labels or multiple accounts.
+**Target: reached by the agent team in run 7: 332/418, top 11.0%.** The Scout and Research agents read public notebooks (live research that run also translated a faithful rule on its own), the research memory carried the rules earlier research had validated, and the Evaluator submitted the woman-child-group rule (CV 0.8406, complexity 4) because the best boosted model (CV 0.8451) is not significantly better on the same rows; the reviewer then stopped on target. Runs 1-6, without research, peaked at 327/418 (top 27.4%). Nothing used leaked labels or multiple accounts. The decisions made after seeing public scores are listed below; run 7's score measures the pipeline as designed after them, not an independent test of those decisions.
 
 **Human involvement, in the order it happened.** The Titanic work was not hands-off, and the later changes were made knowing public scores:
 1. After runs 1-3 (public 321-327), a multi-agent workflow researched leak-free Titanic techniques, implemented three levers in isolated worktrees and had adversarial verifiers reproduce them; only fold-safe group target encoding was kept (+0.6 to +0.7 `cv_lcb` over 5 CV seeds). A one-standard-error selection rule was rejected then (across model families it lost 1.24 ± 0.49 points against `cv_lcb` on 20 held-out splits).

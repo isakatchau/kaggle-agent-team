@@ -1050,6 +1050,226 @@
       },
       "found_in": "20261022T130430Z (logged answer)",
       "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Name-Based Family Survival Rule",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ",\\s*(\\w+)\\.",
+            "name": "Title"
+          },
+          {
+            "column": "Name",
+            "pattern": "^(.*?),",
+            "name": "Surname"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261023T020604Z",
+      "model": "groq:qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Name-based gender and family group rules",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ",\\s*(\\w+)\\.",
+            "name": "Title"
+          },
+          {
+            "column": "Name",
+            "pattern": "^(.*?),",
+            "name": "Surname"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Mrs",
+                    "Miss",
+                    "Master",
+                    "Ms",
+                    "Mlle",
+                    "Lady",
+                    "Mme",
+                    "the Countess",
+                    "Dona"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "in",
+                "value": [
+                  "Mrs",
+                  "Miss",
+                  "Ms",
+                  "Mlle",
+                  "Lady",
+                  "Mme",
+                  "the Countess",
+                  "Dona"
+                ]
+              }
+            ],
+            "group_keys": [
+              "Surname"
+            ],
+            "members_when": [
+              [
+                {
+                  "column": "Title",
+                  "op": "in",
+                  "value": [
+                    "Mrs",
+                    "Miss",
+                    "Master",
+                    "Ms",
+                    "Mlle",
+                    "Lady",
+                    "Mme",
+                    "the Countess",
+                    "Dona"
+                  ]
+                }
+              ]
+            ],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261023T020604Z",
+      "model": "groq:qwen/qwen3.8-27b"
+    },
+    {
+      "rule": {
+        "name": "Name-based rule model",
+        "derive": [
+          {
+            "column": "Name",
+            "pattern": ".*?(Mr|Mrs|Miss|Master)\\.",
+            "name": "Title"
+          },
+          {
+            "column": "Name",
+            "pattern": "^(.*?),",
+            "name": "Surname"
+          }
+        ],
+        "base_column": "Sex",
+        "overrides": [
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Master"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 1,
+            "set_to": 1
+          },
+          {
+            "when": [
+              {
+                "column": "Title",
+                "op": "==",
+                "value": "Mrs"
+              }
+            ],
+            "group_keys": [
+              "Surname",
+              "Pclass",
+              "Ticket"
+            ],
+            "members_when": [],
+            "min_group_size": 2,
+            "if_all": 0,
+            "set_to": 0
+          }
+        ],
+        "source": "cdeotte/titanic-using-name-only-0-81818",
+        "reported_public_score": 0.81818
+      },
+      "found_in": "20261023T020604Z",
+      "model": "groq:qwen/qwen3.8-27b"
     }
   ]
 }

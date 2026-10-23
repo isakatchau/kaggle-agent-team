@@ -1,0 +1,15 @@
+{
+  "best": "it1_histgb_reg1",
+  "checkpoints": [
+    "it1_histgb_reg1",
+    "it1_rule_WCG Model"
+  ],
+  "params": {
+    "max_iter": 800,
+    "learning_rate": 0.05,
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 30,
+    "l2_regularization": 0.0
+  },
+  "selected": "it1_rule_WCG Model"
+}

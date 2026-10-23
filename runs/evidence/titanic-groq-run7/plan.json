@@ -1,0 +1,20 @@
+{
+  "reasoning": "The profile shows a clear target column \"Survived\" with two classes (0/1) and no missing values, indicating a binary classification problem. The sample submission contains the id column \"PassengerId\" and the target column, and the expected output is a single integer label per row, so the submission format is \"label\". No explicit evaluation metric is provided; the classic Titanic competition uses accuracy, which matches the available metric choices. The data has moderate class balance (skew 0.48) but notable missing values in \"Age\" and especially \"Cabin\", and high\u2011cardinality text fields (\"Name\", \"Ticket\", \"Cabin\") that could cause overfitting, so these are listed as risks. Suitable first\u2011try models are tree\u2011based ensembles and a linear model, all of which are available.",
+  "task": "binary",
+  "metric": "accuracy",
+  "target": "Survived",
+  "id_column": "PassengerId",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees",
+    "linear"
+  ],
+  "risks": [
+    "missing values in Age and Cabin",
+    "high cardinality text columns (Name, Ticket, Cabin) may cause overfitting",
+    "moderate class imbalance"
+  ]
+}
