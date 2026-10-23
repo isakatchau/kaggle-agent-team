@@ -1,6 +1,6 @@
 # Kaggle Agent Team
 
-A team of five LLM agents that enters a Kaggle tabular competition on its own: it downloads the data, works out the task and metric, designs features, trains and ensembles models, decides when a result is worth one of the limited daily submissions, reads the leaderboard and plans the next round, until it reaches the target percentile (top 20% by default) or runs out of budget.
+A team of seven LLM agents that enters a Kaggle tabular competition on its own: it downloads the data, works out the task and metric, reads the competition's public notebooks for techniques it can test, designs features, trains and ensembles models, decides when a result is worth one of the limited daily submissions, reads the leaderboard and plans the next round, until it reaches the target percentile (top 20% by default) or runs out of budget.
 
 ```bash
 python -m kagent run --config configs/competitions/titanic.yaml
@@ -13,20 +13,21 @@ Switching competitions is a one-line YAML file: only the Kaggle slug is required
 | Agent | Responsibility | Output (validated with pydantic) | Hard guardrails applied after the LLM answers |
 |---|---|---|---|
 | **Planner** | Reads the data profile, sample submission and the competition's evaluation page. Decides the task, metric, target, id column and submission format. | `CompetitionPlan` | Target must be a train-only column; id must be in the sample submission; metric must match the task; YAML overrides win |
-| **Data** | Designs the feature plan: regex extraction from text, dates, frequency encoding, group sizes, fold-safe group target encoding, ratios, log transforms, log target. It picks transformations; a tool applies them. | `FeaturePlan` | Unknown columns, invalid regexes, bad pairs and group keys that are unique per row are removed; RMSLE forces a log target |
-| **Modeling** | Proposes a batch of cross-validated experiments (model family and hyperparameters) and whether to ensemble. | `ExperimentBatch` | Params are clipped to bounds; duplicates of past runs are skipped; batch size is capped |
-| **Evaluator** | Picks a candidate and decides whether it deserves a submission. | `SubmitDecision` | The candidate is replaced by the simplest one the best-CV candidate does not beat (accuracy: one-sided McNemar on out-of-fold rows, p < 0.05; other metrics: within one standard error), so the LLM's pick can be overridden. No submission after the budget is spent, or unless `cv_lcb` beats the best submitted CV by `min_improvement` |
-| **Scout + Research** | Reads the competition's public notebooks through the Kaggle API, like a person entering a competition: picks what to read from the 100 most voted and 30 best scored, may search, follows each notebook's references, skims, then reads closely the notebooks where rule-shaped techniques appear, and writes them as typed rules (`RuleModel`). | `ReadingList`, `ResearchNotes` | Notebooks are text, never executed; those reading data from outside the competition are flagged; a rule may only use the competition's columns, its regexes must match and its conditions must match real rows, or it is sent back once with the concrete problems; several independent translations, all valid ones cross-validated |
-| **Leaderboard reviewer** (bonus) | Compares CV, public LB and percentile with the target. Diagnoses what is limiting the score and routes the next round to features, models or tuning, with concrete suggestions. | `Review` | Stops when the target is reached or iterations run out |
+| **Scout + Research** | Reads the competition's public notebooks through the Kaggle API, like a person entering a competition: picks what to read from the 100 most voted and 30 best scored, may search, follows each notebook's references, skims, then reads closely the notebooks where rule-shaped techniques appear, and writes them as typed rules (`RuleModel`). Binary tasks only. | `ReadingList`, `ResearchNotes` | Only listed or searched notebooks are read, within `research_notebooks`; notebooks are text, never executed; those reading data from outside the competition are flagged; a rule may only use the competition's columns, its regexes must match and its conditions must match real rows, or it is sent back once with the concrete problems; several independent translations, all valid ones cross-validated |
+| **Data** | Designs the feature plan: regex extraction from text, dates, frequency encoding, group sizes, fold-safe group target encoding, ratios, log transforms, log target. It picks transformations; a tool applies them. | `FeaturePlan` | Unknown columns, invalid regexes, bad pairs and group keys that are unique per row are removed; keys whose repeated groups average more than 10 rows are skipped; RMSLE forces a log target |
+| **Modeling** | Proposes a batch of cross-validated experiments (model family and hyperparameters) and whether to ensemble. | `ExperimentBatch` | Params are clipped to bounds; duplicates of past runs are skipped; batch size is capped; `group_override` only on binary label metrics with group keys, and always added at its defaults on a new feature set |
+| **Evaluator** | Picks a candidate (experiment, rule or ensemble) and decides whether it deserves a submission. | `SubmitDecision` | The candidate is replaced by the simplest one the best-CV candidate does not beat (accuracy: one-sided McNemar on out-of-fold rows, p < 0.05; other metrics: within one standard error), so the LLM's pick can be overridden. No submission after the budget is spent, or unless `cv_lcb` beats the best submitted CV by `min_improvement` |
+| **Leaderboard reviewer** (bonus) | Compares CV, public LB and percentile with the target. Diagnoses what is limiting the score and routes the next round to features, models or tuning, with concrete suggestions. | `Review` | Stops when the target is reached or iterations run out; refuses to stop after one round below target; a focus repeated right after it gained no CV is switched |
 
-Every agent has a **deterministic heuristic** with the same output schema. It is used when no LLM is configured (`--llm mock`), when the LLM is unreachable, or when the LLM returns invalid JSON twice. The run never dies because of the model. The log records which path produced each decision (`source: openai:gpt-4o-mini`, `heuristic` or `heuristic-fallback`).
+Every agent has a **deterministic heuristic** with the same output schema (the Research agent's adopts no rule: translating notebooks needs a language model). It is used when no LLM is configured (`--llm mock`), when the LLM is unreachable, or when the LLM returns invalid JSON twice. The run never dies because of the model. The log records which path produced each decision (`source: openai:gpt-4o-mini`, `heuristic` or `heuristic-fallback`).
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     S((start)) --> P[Planner]
-    P --> D[Data agent]
+    P --> RS[Scout + Research]
+    RS --> D[Data agent]
     D --> M[Modeling agent]
     M --> E[Evaluator]
     E --> R[Leaderboard reviewer]
@@ -36,42 +37,56 @@ flowchart LR
 
     subgraph tools [Tools: the only code that touches data or Kaggle]
       K[Kaggle CLI / offline platform]
+      NB[Public notebooks via the Kaggle API: read, never run]
+      RL[Rule language: validation + fold-safe CV]
+      RM[(Research memory)]
       FB[Feature builder]
       T[CV trainer + greedy ensemble]
       W[Submission writer + pre-flight check]
     end
     P -.-> K
+    RS -.-> NB
+    RS -.-> RL
+    RS -.-> RM
     D -.-> FB
     M -.-> T
+    M -.-> RL
     E -.-> W
     E -.-> K
 ```
 
-- **Orchestration**: a LangGraph `StateGraph` (`src/kagent/orchestrator/graph.py`). Graph state holds only control flow (iteration, focus, done). DataFrames, features and models live in a shared `Workspace`.
-- **LLM interface**: `LLMClient.complete_json(system, user) -> dict` (`src/kagent/llm/`). The OpenAI-compatible client uses JSON mode and talks to any compatible endpoint through `OPENAI_BASE_URL` (Groq's free tier by default in `.env.example`). Before a run, one tiny preflight call checks the key, URL and model, so a misconfiguration stops the run instead of silently degrading every agent to its heuristic. `summary.json` reports `llm_fallbacks`.
-- **Agents never execute code they write.** They choose from typed menus (feature operations, model families, bounded params). This keeps the system safe and reproducible, and lets the heuristics and the LLM share one interface. The cost is expressiveness; see Limitations.
+- **Orchestration**: a LangGraph `StateGraph` (`src/kagent/orchestrator/graph.py`). Graph state holds only control flow (iteration, focus, done). DataFrames, features, models and adopted rules live in a shared `Workspace`. The research node runs once, before the first round.
+- **LLM interface**: `LLMClient.complete_json(system, user) -> dict` (`src/kagent/llm/`). The OpenAI-compatible client uses JSON mode and talks to any compatible endpoint through `OPENAI_BASE_URL` (Groq's free tier by default in `.env.example`). Before a run, one tiny preflight call checks the key, URL and model, so a misconfiguration stops the run instead of silently degrading every agent to its heuristic. Reading notebooks is the largest prompt, so the Scout and Research agents can have their own model and quota: `OPENAI_MODEL_RESEARCH`, with optional `OPENAI_MAX_TOKENS_RESEARCH` (output-token ceiling) and `OPENAI_REASONING_EFFORT_RESEARCH`. It gets its own preflight; if that fails, the run goes on with the research memory only. Without it, they use the main model. `summary.json` reports `llm_fallbacks`.
+- **Agents never execute code they write or read.** They choose from typed menus (feature operations, model families, bounded params), and a technique found in a notebook is adopted only as a typed rule that a tool evaluates. This keeps the system safe and reproducible, and lets the heuristics and the LLM share one interface. The cost is expressiveness; see Limitations.
 - **Observability**:
   - `runs/<competition>/<run_id>/events.jsonl`: every reasoning, decision, tool call, tool result, error and fallback.
   - `llm_calls.jsonl`: full prompts and responses, with tokens and latency.
-  - `plan.json`, `feature_plan_v*.json`, `review_it*.json`, `experiments.csv`, `submissions.json` and `summary.json`.
+  - `plan.json`, `research.json` (notebooks listed and read, external reads, techniques, rules), `feature_plan_v*.json`, `review_it*.json`, `experiments.csv`, `submissions.json` and `summary.json`.
   - `models/*.joblib`: fold models as checkpoints.
   - `plots/*.png`.
+  - `runs/<competition>/research_memory.json`: rules validated by earlier research, reused by later runs.
   - `runs/index.jsonl`: one line per attempt.
 
 More detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ```
 src/kagent/
-  agents/          planner, data, modeling, evaluator, reviewer, shared base, schemas
-  llm/             interface, OpenAI client, scripted client for tests
-  tools/           kaggle (CLI + offline), profile, features, train, metrics, submission, synthetic
+  agents/          planner.py, research.py (scout + research), data.py, modeling.py, evaluator.py,
+                   reviewer.py, base.py (shared contract), schemas.py (typed outputs, rule language)
+  llm/             interface + preflight, OpenAI-compatible client, scripted client for tests
+  tools/           kaggle.py (CLI + offline), notebooks.py (notebooks as text), rules.py (rule validation and
+                   fold-safe evaluation), memory.py (research memory), profile.py, features.py, train.py,
+                   metrics.py, submission.py, synthetic.py
   orchestrator/    LangGraph graph + Workspace
   observability/   JSONL run logger
   reporting/       matplotlib evidence
-  cli.py           run | demo | list-playground
+  cli.py           run | demo | list-playground | kaggle
 dashboard/app.py   Streamlit dashboard of attempts, scores and agent decisions
 configs/competitions/*.yaml
-tests/             offline unit + end-to-end tests
+scripts/           bench_cv.py (offline CV benchmark), make_noise_keys.py (shuffled-key control),
+                   seed_research_memory.py (memory from logged Research answers), diagnostics/ (manual
+                   Titanic baselines), plans/ (feature plans used by the benchmarks)
+tests/             offline unit + end-to-end tests; e2e/ dashboard browser tests (make e2e)
 ```
 
 ## How to run
@@ -86,7 +101,7 @@ make test                      # offline, no keys needed
 
 ### 2. Credentials (kept outside the repo)
 
-- **LLM:** `cp .env.example .env`, then set `OPENAI_API_KEY`. The example targets Groq (free key at console.groq.com, model `openai/gpt-oss-120b`). For OpenAI, remove `OPENAI_BASE_URL` and set `OPENAI_MODEL=gpt-4o-mini`.
+- **LLM:** `cp .env.example .env`, then set `OPENAI_API_KEY`. The example targets Groq (free key at console.groq.com, model `openai/gpt-oss-120b`). For OpenAI, remove `OPENAI_BASE_URL` and set `OPENAI_MODEL=gpt-4o-mini`. The example also gives notebook reading its own Groq model (the three `*_RESEARCH` lines); delete them to use the main model for it.
 - **Kaggle** (CLI 2.x): run `kaggle auth login` (OAuth in the browser, no token to manage), or generate a token at kaggle.com/settings/api and save it as `~/.kaggle/access_token` or export `KAGGLE_API_TOKEN`. Check with `python -m kagent kaggle competitions list`. The `kagent kaggle` wrapper is the official CLI verifying TLS against the OS certificate store (as all of `kagent` does through `truststore`), so it also works behind TLS-inspecting antivirus or corporate proxies; use `python -m kagent kaggle auth login` if plain `kaggle auth login` fails with `CERTIFICATE_VERIFY_FAILED`.
 - **Competition rules:** open each competition page once and click *Join / I understand and accept*. The API returns 403 until you do.
 
@@ -109,6 +124,8 @@ python -m kagent run --config configs/competitions/titanic.yaml --llm mock
 make dashboard                 # http://localhost:8501
 ```
 
+**Research** runs on binary tasks, once before the first round: the Scout picks up to `research_notebooks` public notebooks (default 8) and the Research agent writes `research_attempts` independent translations (default 3). Set `research_notebooks: 0` in the YAML to skip reading notebooks. Rules that earlier research validated stay in `runs/<competition>/research_memory.json` and are revalidated and evaluated by every run, with or without reading; delete that file to run without them. With `--llm mock` notebooks are still listed and read, but no new rule is written.
+
 ### 4. New competition
 
 Copy `configs/competitions/playground.yaml` and set `competition:` to the slug in the URL (`kaggle.com/competitions/<slug>`). Run `python -m kagent list-playground` to find current episodes. Overrides (`metric`, `target`, `id_column`, `sample_rows`) are optional.
@@ -123,14 +140,15 @@ make docker-run COMP=titanic             # mounts ~/.kaggle read-only and passes
 
 ## Demo guide
 
-1. **`make test`** (about 10 s) shows the tools, the guardrails and both offline loops working.
+1. **`make test`** (about a minute) shows the tools, the guardrails, the research rules and both offline loops working.
 2. **`python -m kagent demo --task regression --target-percentile 0.05 --max-iterations 4`** shows the loop in action. The target is deliberately hard, so the reviewer keeps routing rounds: tuning → models → features. The evaluator holds back submissions that do not clear `min_improvement`, and the run stops on budget.
 3. **`python -m kagent run --config configs/competitions/titanic.yaml`** runs on real Kaggle. The console shows each agent's reasoning and decision. Things to watch:
    - The Planner infers the metric from the evaluation page (or the sample submission when the page is unavailable).
+   - The Scout's reading list and the rules the Research agent writes from it (`research.json`); each valid rule is cross-validated next to the models.
    - The Data agent's regex and group-size choices for `Name`, `Ticket` and `Cabin`; this is where the LLM differs most from the heuristic.
    - The Evaluator decides whether to submit.
    - The reviewer compares the percentile to the target and routes the next round.
-4. **`make dashboard`**: attempts across competitions, best CV / LB / percentile, experiments, CV vs LB, and an expandable timeline of every agent's reasoning.
+4. **`make dashboard`**: attempts across competitions, best CV / LB / percentile, experiments, CV vs LB, and an expandable timeline of every agent's reasoning. `make e2e` drives it in a browser against `runs/evidence` and records a video per test (`runs/evidence/videos`).
 5. **Evidence** for the runs reported below is in `runs/evidence/`: event logs, plans, experiments, submissions, plots and summaries.
 
 ## Results
@@ -201,5 +219,6 @@ The synthetic leaderboard is generated, not real. Teams are spread between a con
 
 - Tabular, single-target competitions with a CSV `train / test / sample_submission` layout. No images or text models, no multi-target, and no code competitions (notebook-only submission).
 - Feature operations are a fixed menu. Domain-specific transformations outside it are not reachable.
+- Research adopts only rules of one shape (majority class per value of one column, plus unanimous-group overrides) and only on binary tasks; other techniques it reads are listed in `research.json` but not used.
 - Large Playground datasets train on `sample_rows` for speed, which costs some accuracy.
 - The percentile uses the public leaderboard at submission time. The private leaderboard can differ.
