@@ -57,10 +57,19 @@ def profile(train: pd.DataFrame, test: pd.DataFrame, sample: pd.DataFrame) -> di
     }
 
 
-def compact_profile(prof: dict, max_columns: int = 60) -> dict:
-    """Smaller view for LLM prompts on wide datasets."""
+def compact_profile(prof: dict, max_columns: int = 50, max_examples: int = 3) -> dict:
+    """Smaller view for LLM prompts on wide datasets (free tiers cap tokens per request).
+
+    Target candidates and sample-submission columns are always kept: a truncated view once dropped
+    House Prices' SalePrice, which the Data agent's heuristic then could not find.
+    """
+    keep = set(prof.get("target_candidates", [])) | set(prof.get("sample_submission", {}).get("columns", []))
+    first = [c for c in prof["columns"] if c["name"] in keep]
+    rest = [c for c in prof["columns"] if c["name"] not in keep]
+    chosen = first + rest[: max(max_columns - len(first), 0)]
     out = dict(prof)
-    out["columns"] = prof["columns"][:max_columns]
-    if len(prof["columns"]) > max_columns:
-        out["columns_truncated"] = len(prof["columns"]) - max_columns
+    out["columns"] = [{k: (v[:max_examples] if k == "examples" else v) for k, v in c.items() if v is not None}
+                      for c in chosen]
+    if len(prof["columns"]) > len(chosen):
+        out["columns_truncated"] = len(prof["columns"]) - len(chosen)
     return out

@@ -65,7 +65,7 @@ class DataAgent(Agent[FeaturePlan]):
             elif not is_text and (c.get("skew") or 0) > 2 and (c.get("min") or 0) >= 0:
                 logs.append(c["name"])
 
-        tcol = next(c for c in prof["columns"] if c["name"] == plan["target"])
+        tcol = next((c for c in prof["columns"] if c["name"] == plan["target"]), {})
         log_target = plan["task"] == "regression" and (
             plan["metric"] == "rmsle" or ((tcol.get("skew") or 0) > 1 and (tcol.get("min") or 0) >= 0))
 

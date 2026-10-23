@@ -332,3 +332,14 @@ def test_cli_csv_skips_warnings_before_the_header():
     assert KaggleCLI._latest_public_score(out) == 0.79426
     assert list(csv_from_cli(out, "ref").columns)[:2] == ["ref", "fileName"]
     assert csv_from_cli("no csv here", "ref").empty
+
+
+def test_compact_profile_keeps_target_and_submission_columns_on_wide_data():
+    from kagent.tools.profile import compact_profile
+    cols = [{"name": f"c{i}", "dtype": "int64", "examples": ["1", "2", "3", "4", "5"], "skew": None} for i in range(80)]
+    prof = {"columns": cols + [{"name": "SalePrice", "dtype": "float64", "examples": ["1"]}],
+            "target_candidates": ["SalePrice"], "sample_submission": {"columns": ["Id", "SalePrice"]}}
+    out = compact_profile(prof, max_columns=10)
+    names = [c["name"] for c in out["columns"]]
+    assert names[0] == "SalePrice" and len(names) == 10 and out["columns_truncated"] == 71
+    assert all(len(c.get("examples", [])) <= 3 and "skew" not in c for c in out["columns"])
