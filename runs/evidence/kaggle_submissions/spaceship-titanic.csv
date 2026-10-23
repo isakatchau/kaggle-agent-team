@@ -1,0 +1,2 @@
+ref,fileName,date,description,status,publicScore,privateScore
+57548226,it1_lightgbm_high_lr.csv,2026-10-23 03:55:30.133000,kagent 20261023T035625Z it1_lightgbm_high_lr cv=0.79593,SubmissionStatus.COMPLETE,0.79074,

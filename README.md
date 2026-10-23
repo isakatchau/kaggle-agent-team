@@ -84,8 +84,9 @@ src/kagent/
 dashboard/app.py   Streamlit dashboard of attempts, scores and agent decisions
 configs/competitions/*.yaml
 scripts/           bench_cv.py (offline CV benchmark), make_noise_keys.py (shuffled-key control),
-                   seed_research_memory.py (memory from logged Research answers), diagnostics/ (manual
-                   Titanic baselines), plans/ (feature plans used by the benchmarks)
+                   seed_research_memory.py (memory from logged Research answers), make_demo_video.py
+                   (demo video), diagnostics/ (manual Titanic baselines), plans/ (feature plans used
+                   by the benchmarks)
 tests/             offline unit + end-to-end tests; e2e/ dashboard browser tests (make e2e)
 ```
 
@@ -162,7 +163,7 @@ In Docker, OAuth credentials from `kaggle auth login` need write access to refre
    - The Evaluator decides whether to submit.
    - The reviewer compares the percentile to the target and routes the next round.
 4. **`make dashboard`**: attempts across competitions, best CV / LB / percentile, experiments, CV vs LB, and an expandable timeline of every agent's reasoning. `make e2e` drives it in a browser against `runs/evidence` and records a video per test (`runs/evidence/videos`).
-5. **Evidence** for the runs reported below is in `runs/evidence/`: event logs, plans, experiments, submissions, plots and summaries.
+5. **Evidence** for the runs reported below is in `runs/evidence/`: event logs, plans, experiments, submissions, checkpoints, plots and summaries. `runs/evidence/kaggle_submissions/` holds each competition's Kaggle submission history as Kaggle reports it (the manual diagnostics are labelled as such). `runs/evidence/video/kagent_titanic_run7.mp4` is a 62-second demo of run 7 (a replay of its event log, then the dashboard), made by `python scripts/make_demo_video.py`. The research prompts in `llm_calls.jsonl` quote excerpts of public Kaggle notebooks, each labelled with its author/slug; that text belongs to its authors.
 
 ## Results
 
@@ -181,11 +182,11 @@ Leaderboard positions are where a **new** submission with that score lands on th
 | **titanic, run 7 (research: notebooks + research memory; typed rules)** | accuracy ↑ | 0.8406 (0.8451) | **332/418 (0.79425)** | **top 11.0% of 11,490 (target 20%: reached)** | 1 / 1 | `runs/evidence/titanic-groq-run7` |
 | titanic (heuristic agents, `--no-submit`) | accuracy ↑ | (0.8418) | | | 4 / 0 | `runs/evidence/titanic-heuristic` |
 | house-prices-advanced-regression-techniques (LLM agents: `openai/gpt-oss-20b`) | RMSLE ↓ | 0.1265 (0.1250) | 0.12715 | top 34.7% of 4,385 (target 20%: not reached) | 4 / 2 (1st: 0.13692) | `runs/evidence/house-prices-run1` |
-| spaceship-titanic (LLM agents: `openai/gpt-oss-20b`, config = slug only) | accuracy ↑ | 0.7959 | 0.79074 | top 79.6% of 1,724 (target 20%: not reached) | 2 / 1 | `runs/evidence/spaceship-titanic-run1` |
+| spaceship-titanic (LLM agents: `openai/gpt-oss-20b`; the config names no target, metric or id) | accuracy ↑ | 0.7959 | 0.79074 | top 79.6% of 1,724 (target 20%: not reached) | 2 / 1 | `runs/evidence/spaceship-titanic-run1` |
 
 **Target: reached by the agent team in run 7: 332/418, top 11.0%.** The Scout and Research agents read public notebooks (live research that run also translated a faithful rule on its own), the research memory carried the rules earlier research had validated, and the Evaluator submitted the woman-child-group rule (CV 0.8406, complexity 4) because the best boosted model (CV 0.8451) is not significantly better on the same rows; the reviewer then stopped on target. Runs 1-6, without research, peaked at 327/418 (top 27.4%). Nothing used leaked labels or multiple accounts. The decisions made after seeing public scores are listed below; run 7's score measures the pipeline as designed after them, not an independent test of those decisions.
 
-**Other competitions, first attempt each.** Both ran end to end with no code change, from a config holding the slug (Spaceship Titanic) or the slug and budget (House Prices); the Planner inferred task, metric, target, id and submission format (Spaceship's target is a True/False column, House Prices is RMSLE regression with a log target). Neither reached the top 20%. House Prices improved from 0.13692 to 0.12715 between its two submissions and used the whole budget; its Data agent's LLM call exceeded the free tier's request size on the 81-column profile and fell back to the heuristic (the profile sent to the LLM is now smaller and always keeps the target). Spaceship Titanic stopped after two rounds because the reviewer LLM read its top-79.6% position as "well above the target", a reasoning error the guardrails let through (they only refuse a stop below target before two rounds exist). Research ran on Spaceship Titanic and adopted no rule, which is what its notebooks support; it is skipped on regression.
+**Other competitions.** Both ran from a short config that names no target, metric, id or submission format (slug, target percentile and budget); the Planner inferred them (Spaceship's target is a True/False column, House Prices is RMSLE regression with a log target). Neither reached the top 20%. Spaceship Titanic ran on its first attempt with no code change. House Prices did not: its first attempt (not kept) crashed after the Data agent's LLM request on the 81-column profile exceeded the free tier's size, because the shortened profile had dropped `SalePrice` and the Data heuristic could not find the target; the profile was made smaller and now always keeps the target and submission columns (commit `b42e249`), and the run reported here started after that fix. In it, the Data agent's LLM returned invalid JSON twice and the heuristic was used; House Prices improved from 0.13692 to 0.12715 between its two submissions and used the whole budget. Spaceship Titanic stopped after two rounds because the reviewer LLM read its top-79.6% position as "well above the target", a reasoning error the guardrails let through (they only refuse a stop below target before two rounds exist). Research ran on Spaceship Titanic and adopted no rule, which is what its notebooks support; it is skipped on regression.
 
 **Human involvement, in the order it happened.** The Titanic work was not hands-off, and the later changes were made knowing public scores:
 1. After runs 1-3 (public 321-327), a multi-agent workflow researched leak-free Titanic techniques, implemented three levers in isolated worktrees and had adversarial verifiers reproduce them; only fold-safe group target encoding was kept (+0.6 to +0.7 `cv_lcb` over 5 CV seeds). A one-standard-error selection rule was rejected then (across model families it lost 1.24 ± 0.49 points against `cv_lcb` on 20 held-out splits).

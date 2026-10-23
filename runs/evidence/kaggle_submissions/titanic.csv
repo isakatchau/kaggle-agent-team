@@ -1,0 +1,12 @@
+ref,fileName,date,description,status,publicScore,privateScore
+57545584,it1_rule_WCG Model.csv,2026-10-23 02:12:16.660000,kagent 20261023T020604Z it1_rule_WCG Model cv=0.84063,SubmissionStatus.COMPLETE,0.79425,
+57519415,it1_histgb_reg1.csv,2026-10-22 09:45:14.143000,kagent 20261022T094818Z it1_histgb_reg1 cv=0.83614,SubmissionStatus.COMPLETE,0.74401,
+57518956,titanic_wcg.csv,2026-10-22 09:30:44.827000,"manual diagnostic (not the agent team): wcg baseline, fixed a priori",SubmissionStatus.COMPLETE,0.79904,
+57518954,titanic_simple.csv,2026-10-22 09:30:39.403000,"manual diagnostic (not the agent team): simple baseline, fixed a priori",SubmissionStatus.COMPLETE,0.77511,
+57518951,titanic_gender.csv,2026-10-22 09:30:34.013000,"manual diagnostic (not the agent team): gender baseline, fixed a priori",SubmissionStatus.COMPLETE,0.76555,
+57517896,it1_histgb_1.csv,2026-10-22 08:57:26.023000,kagent 20261022T090006Z it1_histgb_1 cv=0.84175,SubmissionStatus.COMPLETE,0.76315,
+57517614,it1_lgbm_base.csv,2026-10-22 08:48:35.507000,kagent 20261022T085139Z it1_lgbm_base cv=0.82716,SubmissionStatus.COMPLETE,0.74401,
+57504445,it1_lgbm_base.csv,2026-10-22 01:24:05.110000,kagent 20261022T012654Z it1_lgbm_base cv=0.83951,SubmissionStatus.COMPLETE,0.76794,
+57504239,it1_ensemble.csv,2026-10-22 01:17:42.813000,kagent 20261022T012027Z it1_ensemble cv=0.83389,SubmissionStatus.COMPLETE,0.76794,
+57503562,it4_ensemble.csv,2026-10-22 00:52:21.610000,kagent 20261022T005215Z it4_ensemble cv=0.83951,SubmissionStatus.COMPLETE,0.77033,
+57503455,it1_lgbm_1.csv,2026-10-22 00:49:00.593000,kagent 20261022T005215Z it1_lgbm_1 cv=0.83726,SubmissionStatus.COMPLETE,0.78229,
