@@ -1,0 +1,810 @@
+{
+  "listing": [
+    {
+      "ref": "gusthema/spaceship-titanic-with-tfdf",
+      "title": "Spaceship Titanic with TFDF",
+      "votes": 8063,
+      "list": "votes"
+    },
+    {
+      "ref": "samuelcortinhas/spaceship-titanic-a-complete-guide",
+      "title": "\ud83d\ude80 Spaceship Titanic: A complete guide \ud83c\udfc6",
+      "votes": 2047,
+      "list": "votes"
+    },
+    {
+      "ref": "odins0n/spaceship-titanic-eda-27-different-models",
+      "title": "\ud83d\ude80Spaceship Titanic -\ud83d\udccaEDA + 27 different models\ud83d\udcc8",
+      "votes": 1074,
+      "list": "votes"
+    },
+    {
+      "ref": "arunklenin/space-titanic-eda-advanced-feature-engineering",
+      "title": "\ud83d\udef8 Space Titanic| EDA|Advanced Feature Engineering",
+      "votes": 701,
+      "list": "votes"
+    },
+    {
+      "ref": "chanchal24/titanic-dataset",
+      "title": "Titanic Dataset",
+      "votes": 683,
+      "list": "votes"
+    },
+    {
+      "ref": "viktortaran/space-titanic",
+      "title": "Space Titanic \ud83d\ude80 \u6a5f\u68b0\u5b66\u7fd2",
+      "votes": 407,
+      "list": "votes"
+    },
+    {
+      "ref": "lazer999/spaceship-titanic-top-6-for-beginners",
+      "title": "\ud83c\udf0c\ud83d\ude80Spaceship Titanic-Top 6%|For Beginners \ud83e\udd13\ud83d\udea2",
+      "votes": 401,
+      "list": "votes"
+    },
+    {
+      "ref": "dmitrykonovalov/fastai-lesson-6a-random-forests",
+      "title": "fastai-lesson-6a-random-forests",
+      "votes": 387,
+      "list": "votes"
+    },
+    {
+      "ref": "kdsharma/spaceship-titanic-competition-end-to-end-project",
+      "title": "Spaceship Titanic Competition End To End Project",
+      "votes": 367,
+      "list": "votes"
+    },
+    {
+      "ref": "computervisi/best-models-spaceship-titanic",
+      "title": "Best models Spaceship_Titanic",
+      "votes": 338,
+      "list": "votes"
+    },
+    {
+      "ref": "azminetoushikwasi/xgboost-wrangling-with-hyperparameters-guide",
+      "title": "XGBoost | Wrangling with Hyperparameters | Guide",
+      "votes": 279,
+      "list": "votes"
+    },
+    {
+      "ref": "arootda/pycaret-visualization-optimization-0-81",
+      "title": "\ud83d\ude80[Pycaret] Visualization + Optimization (0.81)",
+      "votes": 234,
+      "list": "votes"
+    },
+    {
+      "ref": "hardikgarg03/spaceship-titanic-using-random-forest-and-xgboost",
+      "title": "Spaceship Titanic Using Random Forest and Xgboost",
+      "votes": 214,
+      "list": "votes"
+    },
+    {
+      "ref": "kagleo123/titanic-eda-machine-deep-learning",
+      "title": "\ud83d\udea2titanic EDA\ud83d\udcc8 & Machine , Deep learning\ud83d\udca1",
+      "votes": 206,
+      "list": "votes"
+    },
+    {
+      "ref": "eisgandar/spaceship-titanic-eda-xgboost-80",
+      "title": "\ud83c\udf0c Spaceship Titanic - EDA & XGBoost- 80%+",
+      "votes": 182,
+      "list": "votes"
+    },
+    {
+      "ref": "usharengaraju/tensorflow-spaceship-neuraldecisionforests",
+      "title": "\ud83d\ude80\ud83d\ude80[TensorFlow]SpaceShip - NeuralDecisionForests",
+      "votes": 180,
+      "list": "votes"
+    },
+    {
+      "ref": "ruchi798/spaceship-titanic-eda-pytorch-baseline-w-b",
+      "title": "\ud83d\ude80 Spaceship Titanic: EDA + PyTorch Baseline + W&B",
+      "votes": 180,
+      "list": "votes"
+    },
+    {
+      "ref": "bhatnagardaksh/gradient-descent-from-scratch",
+      "title": "Gradient Descent from scratch",
+      "votes": 178,
+      "list": "votes"
+    },
+    {
+      "ref": "cv13j0/spaceship-titanic-nn-model-feature-eng",
+      "title": "\ud83c\udf20 Spaceship Titanic NN Model + Feature Eng.",
+      "votes": 167,
+      "list": "votes"
+    },
+    {
+      "ref": "fernaandodantas/lgbm-0-8066-score-top-7-solution",
+      "title": "LGBM 0.8066% Score Top 7% Solution",
+      "votes": 164,
+      "list": "votes"
+    },
+    {
+      "ref": "ravi20076/spaceshiptitanic-models-v2",
+      "title": "SpaceshipTitanic|Models|V2",
+      "votes": 162,
+      "list": "votes"
+    },
+    {
+      "ref": "ravi20076/sptitanic-bootstrapensemble-pipeline",
+      "title": "SPTitanic|BootstrapEnsemble|Pipeline",
+      "votes": 159,
+      "list": "votes"
+    },
+    {
+      "ref": "kartushovdanil/mlops-how-to-be-rock-of-ml",
+      "title": "\u2699\ufe0f MLops | How to be Rock of ML \u2699\ufe0f",
+      "votes": 143,
+      "list": "votes"
+    },
+    {
+      "ref": "priscachang/spaceship-titanic-complete-solutions-0-80593",
+      "title": "Spaceship Titanic: Complete Solutions(0.80593)",
+      "votes": 134,
+      "list": "votes"
+    },
+    {
+      "ref": "alicanpayasli/94-accuracy-score-ensemble-model",
+      "title": "%94 Accuracy Score-Ensemble Model",
+      "votes": 129,
+      "list": "votes"
+    },
+    {
+      "ref": "jimliu/0-81669-misaelcribeiro-solution-modularity-fe",
+      "title": "\ud83c\udfc6(0.81669) misaelcribeiro solution+Modularity FE",
+      "votes": 128,
+      "list": "votes"
+    },
+    {
+      "ref": "khashayarrahimi94/no-ml-just-statistical-analysis",
+      "title": "No ML, Just Statistical Analysis",
+      "votes": 128,
+      "list": "votes"
+    },
+    {
+      "ref": "hadeux/simple-lightgbm-baseline",
+      "title": "[Simple] LightGBM Baseline",
+      "votes": 127,
+      "list": "votes"
+    },
+    {
+      "ref": "guanlintao/0-814-optuna-xgb-space-titanic",
+      "title": "\ud83d\ude80\u2728 0.814 \ud83d\udd27\u300eOptuna XGB\u300f| Space Titanic",
+      "votes": 125,
+      "list": "votes"
+    },
+    {
+      "ref": "jbomitchell/exponentially-weighted-ensemble-spaceship-titanic",
+      "title": "Exponentially weighted ensemble: Spaceship Titanic",
+      "votes": 120,
+      "list": "votes"
+    },
+    {
+      "ref": "alexandrelemercier/all-best-tabular-classifiers-comparative-study",
+      "title": "All Best Tabular Classifiers - Comparative Study",
+      "votes": 119,
+      "list": "votes"
+    },
+    {
+      "ref": "lordozvlad/spaceship-titanic-fast-kernel-using-sklearnex",
+      "title": "[Spaceship Titanic] Fast kernel using sklearnex",
+      "votes": 119,
+      "list": "votes"
+    },
+    {
+      "ref": "raulparis/spaceship-titanic-81-easy-to-understand",
+      "title": "\ud83d\ude80Spaceship Titanic: ~81% Easy to understand\ud83d\ude80",
+      "votes": 118,
+      "list": "votes"
+    },
+    {
+      "ref": "eu1234/spaceship-81-1-leaderboard-top-2-step-by-step",
+      "title": "Spaceship 81.1% Leaderboard Top 2% (Step by step)",
+      "votes": 117,
+      "list": "votes"
+    },
+    {
+      "ref": "shilongzhuang/space-titanic-a-beginner-guide-80-24-acc",
+      "title": "\ud83d\ude80\ud83d\udef8 Space Titanic: A Beginner Guide (80.24% acc)",
+      "votes": 116,
+      "list": "votes"
+    },
+    {
+      "ref": "georgyzubkov/spaceship-eda-catboost-with-optuna",
+      "title": "Spaceship. EDA, CatBoost with Optuna.",
+      "votes": 114,
+      "list": "votes"
+    },
+    {
+      "ref": "adamml/my-spaceship-titanic-80-5",
+      "title": "My Spaceship Titanic 80.5%",
+      "votes": 114,
+      "list": "votes"
+    },
+    {
+      "ref": "usamabalochhh/data-is-imbalanced-use-smote",
+      "title": "Data is Imbalanced ? Use SMOTE \u2728",
+      "votes": 109,
+      "list": "votes"
+    },
+    {
+      "ref": "ishanpurohit/top-5-solution-with-detailed-explanation",
+      "title": "Top 5% Solution with detailed explanation",
+      "votes": 108,
+      "list": "votes"
+    },
+    {
+      "ref": "usamabalochhh/spaceshiptitanic-eda-80-accuracy",
+      "title": "SpaceShipTitanic-EDA+ 80%+ Accuracy \ud83d\udd25 \ud83d\udef8",
+      "votes": 107,
+      "list": "votes"
+    },
+    {
+      "ref": "nobodymartin/practice-with-visualization-eda-xgb-in-ds",
+      "title": "Practice with Visualization & EDA & XGB in DS",
+      "votes": 106,
+      "list": "votes"
+    },
+    {
+      "ref": "tronrover/among-the-elite-top-100-spaceship-titanic",
+      "title": "Among the Elite \ud83d\udef8 Top 100 Spaceship Titanic",
+      "votes": 104,
+      "list": "votes"
+    },
+    {
+      "ref": "ohseokkim/spaceship-sos-decision-is-always-difficult",
+      "title": "[Spaceship] SOS!! Decision is always difficult!",
+      "votes": 102,
+      "list": "votes"
+    },
+    {
+      "ref": "anushreek15/space-titanic",
+      "title": "Space titanic\ud83d\udef3\ufe0f ",
+      "votes": 101,
+      "list": "votes"
+    },
+    {
+      "ref": "vicsonsam/sst-eda-17-models-dl-top-7",
+      "title": "\ud83d\ude80 SST - \ud83d\udcca EDA |17 models+DL\ud83e\udd16 \ud83d\udd25 TOP 7% \ud83d\udd25 ",
+      "votes": 101,
+      "list": "votes"
+    },
+    {
+      "ref": "odaymourad/detailed-and-full-solution-step-by-step-80-score",
+      "title": "Detailed and Full Solution(Step by Step,>80%score)",
+      "votes": 100,
+      "list": "votes"
+    },
+    {
+      "ref": "vencerlanz09/0-80266-eda-feature-engineerng",
+      "title": "\ud83d\ude80(0.80266%) EDA + Feature Engineerng",
+      "votes": 100,
+      "list": "votes"
+    },
+    {
+      "ref": "kimtaehun/spaceship-complete-template-for-classification",
+      "title": "\ud83d\udef8Spaceship - Complete template for classification",
+      "votes": 99,
+      "list": "votes"
+    },
+    {
+      "ref": "mrbisht/eda-on-spaceship-titanic",
+      "title": "EDA on Spaceship Titanic",
+      "votes": 99,
+      "list": "votes"
+    },
+    {
+      "ref": "faeghehghofrani/3-eda-methods-lgbm",
+      "title": "3 EDA Methods _ LGBM",
+      "votes": 96,
+      "list": "votes"
+    },
+    {
+      "ref": "abhi011097/eda-feature-engineering-automl-manual-model",
+      "title": "Eda\ud83d\udccaFeature_Engineering\ud83d\udcc8AutoML_&_Manual_Model\ud83d\ude80",
+      "votes": 95,
+      "list": "votes"
+    },
+    {
+      "ref": "hadeux/simple-xgboost-baseline",
+      "title": "\ud83d\udc4d[Simple] XGBoost Baseline\ud83d\udc4d",
+      "votes": 94,
+      "list": "votes"
+    },
+    {
+      "ref": "enesztrk/spaceship-titanic-eda-27-different-models",
+      "title": "\ud83d\ude80Spaceship Titanic - EDA - 27 Different Models",
+      "votes": 92,
+      "list": "votes"
+    },
+    {
+      "ref": "eneskosar19/titanic-spaceship-competition-complete-guide",
+      "title": "Titanic Spaceship Competition [Complete Guide]",
+      "votes": 90,
+      "list": "votes"
+    },
+    {
+      "ref": "kevineffendy/catboost-spaceship-titanic",
+      "title": "\ud83d\udc31CatBoost - Spaceship Titanic",
+      "votes": 89,
+      "list": "votes"
+    },
+    {
+      "ref": "adnanshikh/spaceship-titanic-data-science-solutions",
+      "title": "Spaceship Titanic Data Science Solutions",
+      "votes": 89,
+      "list": "votes"
+    },
+    {
+      "ref": "hseyinkalkan/spaceshiptitanic-xgbclassifier-optuna",
+      "title": "SpaceshipTitanic : XGBClassifier+OPTUNA",
+      "votes": 88,
+      "list": "votes"
+    },
+    {
+      "ref": "bennyfung/titanic-xgboost-0-8",
+      "title": "Titanic - XGBoost (0.8)",
+      "votes": 86,
+      "list": "votes"
+    },
+    {
+      "ref": "hadeux/spaceship-titanic-auto-ensemble-model",
+      "title": "[Spaceship Titanic] Auto \ud83e\udd16 Ensemble Model\ud83d\udcb8",
+      "votes": 86,
+      "list": "votes"
+    },
+    {
+      "ref": "mateuszk013/spaceship-titanic-eda-machine-learning",
+      "title": "Spaceship Titanic - EDA & Machine Learning",
+      "votes": 82,
+      "list": "votes"
+    },
+    {
+      "ref": "usamabalochhh/comprehensive-guide-to-solve-tabular-problem",
+      "title": "Comprehensive Guide to Solve Tabular Problem \ud83d\ude80",
+      "votes": 82,
+      "list": "votes"
+    },
+    {
+      "ref": "kalelpark/all-about-spaceship-titanic-solutions",
+      "title": "\ud83c\udf0cALL About SpaceShip Titanic Solutions \ud83d\ude80\ud83c\udf0e",
+      "votes": 81,
+      "list": "votes"
+    },
+    {
+      "ref": "ahmedgaitani/spaceship-titanic-code",
+      "title": "Spaceship Titanic Code",
+      "votes": 80,
+      "list": "votes"
+    },
+    {
+      "ref": "jacopoferretti/spaceship-titanic-with-different-ml-models",
+      "title": "Spaceship Titanic with Different ML Models",
+      "votes": 79,
+      "list": "votes"
+    },
+    {
+      "ref": "bhatnagardaksh/neural-network-from-scratch-numpy-pandas",
+      "title": "Neural Network from scratch (Numpy & Pandas)",
+      "votes": 79,
+      "list": "votes"
+    },
+    {
+      "ref": "danishammar/spaceship-titanic-rf-gbc-lr-acc-80",
+      "title": "Spaceship Titanic RF-GBC-LR ACC:80%",
+      "votes": 77,
+      "list": "votes"
+    },
+    {
+      "ref": "masatomurakawamm/spaceshiptitanic-eda-tabtransformer-tensorflow",
+      "title": "SpaceshipTitanic: EDA + TabTransformer[TensorFlow]",
+      "votes": 77,
+      "list": "votes"
+    },
+    {
+      "ref": "utcarshagrawal/spacehip-titanic-complete-data-understanding-ml",
+      "title": "Spacehip Titanic-Complete Data Understanding+ML\ud83d\ude80",
+      "votes": 77,
+      "list": "votes"
+    },
+    {
+      "ref": "taranmarley/feature-engineering-eda-and-lightgbm",
+      "title": "Feature Engineering, EDA and LightGBM",
+      "votes": 76,
+      "list": "votes"
+    },
+    {
+      "ref": "javohirtoshqorgonov/spaceship-titanic-wonderful-notebook",
+      "title": "Spaceship Titanic| wonderful notebook",
+      "votes": 75,
+      "list": "votes"
+    },
+    {
+      "ref": "mrbisht/handling-missing-values-part-1",
+      "title": "\ud83d\ude04\ud83d\ude04Handling Missing values Part -1",
+      "votes": 75,
+      "list": "votes"
+    },
+    {
+      "ref": "shresthapundir/spaceship-titanic",
+      "title": "Spaceship Titanic\ud83d\ude80\ud83d\udea2",
+      "votes": 74,
+      "list": "votes"
+    },
+    {
+      "ref": "kartushovdanil/advanced-analysis-to-infinity-and-beyond",
+      "title": "\ud83d\ude80 ADVANCED ANALYSIS | To infinity and beyond! \ud83d\ude80",
+      "votes": 74,
+      "list": "votes"
+    },
+    {
+      "ref": "bsthere/spaceship-titanic-0-82137-solution",
+      "title": "\ud83d\ude80 Spaceship Titanic | 0.82137 Solution",
+      "votes": 72,
+      "list": "votes"
+    },
+    {
+      "ref": "yousefmohamed20/spaceship-titanic",
+      "title": "Spaceship Titanic",
+      "votes": 72,
+      "list": "votes"
+    },
+    {
+      "ref": "alicanpayasli/74-accuracy-score",
+      "title": "%74 Accuracy Score",
+      "votes": 72,
+      "list": "votes"
+    },
+    {
+      "ref": "kacperrabczewski/spaceship-titanic-a-machine-learning-journey",
+      "title": "\ud83d\ude80 Spaceship Titanic: A Machine Learning Journey\ud83d\udea2",
+      "votes": 71,
+      "list": "votes"
+    },
+    {
+      "ref": "kalelpark/hey-kaggler-merry-christmas-see-christmas-tree",
+      "title": "Hey Kaggler! Merry  Christmas!(see Christmas tree)",
+      "votes": 71,
+      "list": "votes"
+    },
+    {
+      "ref": "nazimcherpanov/spaceship-titanic-beginner-friendly-tutorial",
+      "title": "Spaceship Titanic | Beginner-Friendly Tutorial",
+      "votes": 70,
+      "list": "votes"
+    },
+    {
+      "ref": "heyrobin/spaceship-titanic-a-cosmic-mystery",
+      "title": "\ud83c\udf0c Spaceship Titanic: A cosmic mystery \ud83e\ude90",
+      "votes": 70,
+      "list": "votes"
+    },
+    {
+      "ref": "desalegngeb/spaceship-titanic-plotly-viz-fe-models",
+      "title": "Spaceship Titanic: Plotly \ud83d\udcc8 viz+ FE \ud83d\udd27+ Models",
+      "votes": 70,
+      "list": "votes"
+    },
+    {
+      "ref": "burakdilber/spaceship-titanic-tidyverse-and-tidymodels",
+      "title": "Spaceship Titanic - tidyverse and tidymodels",
+      "votes": 69,
+      "list": "votes"
+    },
+    {
+      "ref": "jasonheesanglee/email-notification-colab-session-autoshutdown",
+      "title": "\u2709\ufe0f Email Notification & Colab Session AutoShutdown",
+      "votes": 67,
+      "list": "votes"
+    },
+    {
+      "ref": "prashantverma13/hi-houston-we-re-heading-new-home",
+      "title": "Hi Houston \ud83d\udc68\u200d\ud83d\ude80, We're Heading New Home !!",
+      "votes": 67,
+      "list": "votes"
+    },
+    {
+      "ref": "lazer999/0-80-hyperparameter-tuning-with-pipelines",
+      "title": "[0.80+] Hyperparameter Tuning with Pipelines\u2728",
+      "votes": 66,
+      "list": "votes"
+    },
+    {
+      "ref": "nakkaggle/spaceship-titanic-naresh",
+      "title": "Spaceship Titanic naresh",
+      "votes": 65,
+      "list": "votes"
+    },
+    {
+      "ref": "opamusora/top-10-notebook",
+      "title": "Top 10 notebook",
+      "votes": 65,
+      "list": "votes"
+    },
+    {
+      "ref": "mesofianeyou/spaceship-titanic-eda-fi-80-of-accuracy",
+      "title": "\ud83e\udd47Spaceship-Titanic:EDA\ud83d\udcca+FI\ud83e\uddec+80% of accuracy \ud83d\udcc8",
+      "votes": 64,
+      "list": "votes"
+    },
+    {
+      "ref": "gallo33henrique/spaceship-titanic-ml-gradient-boosting",
+      "title": "Spaceship Titanic | ML Gradient Boosting",
+      "votes": 63,
+      "list": "votes"
+    },
+    {
+      "ref": "pavankumar4757/spaceship-titanic-prediction",
+      "title": "Spaceship Titanic prediction",
+      "votes": 62,
+      "list": "votes"
+    },
+    {
+      "ref": "aspillai/spaceship-titanic-classification-simple-lightgbm",
+      "title": "Spaceship Titanic Classification Simple LightGBM",
+      "votes": 62,
+      "list": "votes"
+    },
+    {
+      "ref": "chasek123/sample-building-a-classification-model-in-kaggle",
+      "title": "Sample - Building a Classification Model in Kaggle",
+      "votes": 62,
+      "list": "votes"
+    },
+    {
+      "ref": "igorprikhodko/spaceship-titanic",
+      "title": "SPACESHIP TITANIC",
+      "votes": 61,
+      "list": "votes"
+    },
+    {
+      "ref": "burakdilber/spaceship-titanic-eda-preprocessing-and-xgboost",
+      "title": "Spaceship Titanic - EDA, PreProcessing and XGBoost",
+      "votes": 61,
+      "list": "votes"
+    },
+    {
+      "ref": "hamzaghanmi/let-s-use-keras-tensorflow",
+      "title": "Let's use Keras & Tensorflow \ud83e\uddd9",
+      "votes": 61,
+      "list": "votes"
+    },
+    {
+      "ref": "meetnagadia/titanic-random-forest-score-0-79471",
+      "title": "\ud83d\ude80 Titanic: Random Forest Score 0.79471",
+      "votes": 61,
+      "list": "votes"
+    },
+    {
+      "ref": "edwintyh/pycaret-spaceship-fe-catboost",
+      "title": "\ud83d\ude80[Pycaret] Spaceship - FE + Catboost \ud83c\udfc6",
+      "votes": 61,
+      "list": "votes"
+    },
+    {
+      "ref": "rumbleftw/multi-model-analysis-eda",
+      "title": "\ud83d\ude80Multi-model analysis + EDA",
+      "votes": 60,
+      "list": "votes"
+    },
+    {
+      "ref": "javigallego/space-titanic-exhaustive-eda-fe-optuna",
+      "title": "Space Titanic - Exhaustive EDA / FE / Optuna",
+      "votes": 60,
+      "list": "votes"
+    },
+    {
+      "ref": "kartik2khandelwal/ensemble-model-xgboost-catboost-lgbm",
+      "title": "\ud83d\udd25\ud83d\udd25Ensemble Model - XGBoost, CatBoost, LGBM\ud83d\udd25\ud83d\udd25",
+      "votes": 60,
+      "list": "votes"
+    },
+    {
+      "ref": "taeyangg4/2026-tabular-foundation-models-no-leak-no-cheat",
+      "title": "2026 Tabular Foundation Models (No Leak, No Cheat)",
+      "votes": 5,
+      "list": "score"
+    },
+    {
+      "ref": "junaid512/spaceship-titanic",
+      "title": "Spaceship Titanic",
+      "votes": 39,
+      "list": "score"
+    },
+    {
+      "ref": "eyefulye/notebook38632ede74",
+      "title": "notebook38632ede74",
+      "votes": 3,
+      "list": "score"
+    },
+    {
+      "ref": "eyefulye/space-titanic-prediction-from-ye-and-liu",
+      "title": "Space Titanic Prediction from YE and Liu",
+      "votes": 2,
+      "list": "score"
+    },
+    {
+      "ref": "abdmental01/spaceship-advance-feature-e",
+      "title": "SpaceShip | Advance Feature.E ",
+      "votes": 48,
+      "list": "score"
+    },
+    {
+      "ref": "kjkamosika/llm-assisted-feature-eng-for-spaceship-titanic",
+      "title": "LLM-Assisted Feature Eng. for Spaceship Titanic",
+      "votes": 1,
+      "list": "score"
+    },
+    {
+      "ref": "meenalsinha/spaceship-titanic-notebook",
+      "title": "Spaceship titanic notebook",
+      "votes": 29,
+      "list": "score"
+    },
+    {
+      "ref": "r2303254/inf2008-p5-2-improvedbaselinev2",
+      "title": "INF2008_P5_2_ImprovedBaselineV2",
+      "votes": 17,
+      "list": "score"
+    },
+    {
+      "ref": "ravi20076/spaceshiptitanic-submission-v2",
+      "title": "SpaceshipTitanic|Submission|V2",
+      "votes": 43,
+      "list": "score"
+    },
+    {
+      "ref": "yuntechimb11123055/spaceshiptitanic-models-v2",
+      "title": "SpaceshipTitanic|Models|V2",
+      "votes": 10,
+      "list": "score"
+    },
+    {
+      "ref": "gyogyocat/baseline-gbm",
+      "title": "Baseline_GBM",
+      "votes": 21,
+      "list": "score"
+    },
+    {
+      "ref": "larjeck/space-titanic",
+      "title": "Space Titanic",
+      "votes": 25,
+      "list": "score"
+    },
+    {
+      "ref": "wajahat1064/spaceship-titanic-predictions-ensembling",
+      "title": "Spaceship Titanic Predictions - Ensembling",
+      "votes": 5,
+      "list": "score"
+    },
+    {
+      "ref": "gautamshah2002/spaceship-titanic-with-headjack-ai",
+      "title": "Spaceship Titanic with Headjack.ai",
+      "votes": 21,
+      "list": "score"
+    },
+    {
+      "ref": "moriyuuki6123380085/notebook3ee6724898",
+      "title": "notebook3ee6724898",
+      "votes": 8,
+      "list": "score"
+    },
+    {
+      "ref": "javinlim/space-titanic-eda-advanced-feature-engineering",
+      "title": "\ud83d\udef8 Space Titanic: EDA|Advanced Feature Engineering",
+      "votes": 4,
+      "list": "score"
+    },
+    {
+      "ref": "hirotakaaa/notebook24e6c4c34d",
+      "title": "notebook24e6c4c34d",
+      "votes": 3,
+      "list": "score"
+    },
+    {
+      "ref": "tamakii/notebook47ff03911b",
+      "title": "notebook47ff03911b",
+      "votes": 2,
+      "list": "score"
+    },
+    {
+      "ref": "yuntechimb11123020/spaceship-titanic-g6",
+      "title": "Spaceship Titanic-G6",
+      "votes": 15,
+      "list": "score"
+    },
+    {
+      "ref": "twinpilgrim/spaceshiptitanic-xgboost-score-81-5",
+      "title": "SpaceshipTitanic-XGBoost-Score-81.5",
+      "votes": 55,
+      "list": "score"
+    },
+    {
+      "ref": "bhuvanagayathri/spaceship-titanic",
+      "title": "Spaceship Titanic",
+      "votes": 25,
+      "list": "score"
+    },
+    {
+      "ref": "masatakawatanabe/notebook626350a34c",
+      "title": "notebook626350a34c",
+      "votes": 1,
+      "list": "score"
+    },
+    {
+      "ref": "umanglodaya/spaceship-titanic-xgboost",
+      "title": "Spaceship Titanic | XGBoost",
+      "votes": 19,
+      "list": "score"
+    }
+  ],
+  "read": [
+    {
+      "ref": "gusthema/spaceship-titanic-with-tfdf",
+      "title": "Spaceship Titanic with TFDF",
+      "external_reads": []
+    },
+    {
+      "ref": "samuelcortinhas/spaceship-titanic-a-complete-guide",
+      "title": "\ud83d\ude80 Spaceship Titanic: A complete guide \ud83c\udfc6",
+      "external_reads": []
+    },
+    {
+      "ref": "odins0n/spaceship-titanic-eda-27-different-models",
+      "title": "\ud83d\ude80Spaceship Titanic -\ud83d\udccaEDA + 27 different models\ud83d\udcc8",
+      "external_reads": []
+    },
+    {
+      "ref": "alexisbcook/missing-values",
+      "title": "",
+      "external_reads": [
+        "../input/melbourne-housing-snapshot/melb_data.csv"
+      ]
+    },
+    {
+      "ref": "rtatman/data-cleaning-challenge-handling-missing-values",
+      "title": "",
+      "external_reads": [
+        "../input/building-permit-applications-data/Building_Permits.csv",
+        "../input/nflplaybyplay2009to2016/NFL Play by Play 2009-2017 (v4).csv"
+      ]
+    },
+    {
+      "ref": "taeyangg4/2026-tabular-foundation-models-no-leak-no-cheat",
+      "title": "2026 Tabular Foundation Models (No Leak, No Cheat)",
+      "external_reads": []
+    },
+    {
+      "ref": "junaid512/spaceship-titanic",
+      "title": "Spaceship Titanic",
+      "external_reads": []
+    },
+    {
+      "ref": "eyefulye/notebook38632ede74",
+      "title": "notebook38632ede74",
+      "external_reads": []
+    }
+  ],
+  "techniques": [
+    {
+      "name": "TensorFlow Decision Forests",
+      "summary": "Trains a Random Forest model using the TensorFlow Decision Forests library.",
+      "reported_public_score": null,
+      "source": "gusthema/spaceship-titanic-with-tfdf"
+    },
+    {
+      "name": "Ensemble of Gradient Boosting Models",
+      "summary": "Combines Extra Trees, HistGradientBoosting, XGBoost, LightGBM, and CatBoost with a Logistic Regression stacker.",
+      "reported_public_score": 0.82137,
+      "source": "eyefulye/notebook38632ede74"
+    },
+    {
+      "name": "Tabular Foundation Models",
+      "summary": "Fine-tunes tabular foundation models per fold with nested stacking and group-aware honest CV.",
+      "reported_public_score": 0.82604,
+      "source": "taeyangg4/2026-tabular-foundation-models-no-leak-no-cheat"
+    }
+  ],
+  "rules": []
+}

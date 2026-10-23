@@ -1,0 +1,20 @@
+{
+  "reasoning": "The dataset contains 1460 training rows and 1459 test rows with 81 columns. The target column is \"SalePrice\" (int64) with 663 unique values and a skew of 1.88, indicating a right\u2011skewed distribution typical of house prices. The task is a regression problem. The Kaggle competition \u201cHouse Prices: Advanced Regression Techniques\u201d normally evaluates predictions using RMSLE, which is suitable for skewed continuous targets. The Id column is \"Id\" and the submission format requires a single predicted value per Id, so the format is \"label\". Good baseline models for this tabular regression include gradient boosting (LightGBM, HistGradientBoosting), tree ensembles (RandomForest, ExtraTrees), and linear models (after log\u2011transforming the target). Risks include: 1) Target skewness \u2013 log transform or use RMSLE; 2) Missing values in several columns (e.g., LotFrontage 17.74%, MasVnrType 59.73%); 3) High\u2011cardinality categorical features (LotArea 1073 unique, etc.) that need proper encoding; 4) Potential leakage is unlikely as test_seen_pct is 100% for most columns, but careful cross\u2011validation is needed.",
+  "task": "regression",
+  "metric": "rmsle",
+  "target": "SalePrice",
+  "id_column": "Id",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees",
+    "linear"
+  ],
+  "risks": [
+    "target_skewness",
+    "missing_values",
+    "high_cardinality_categorical_features"
+  ]
+}

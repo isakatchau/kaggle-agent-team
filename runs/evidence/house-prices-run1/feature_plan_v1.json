@@ -1,0 +1,25 @@
+{
+  "reasoning": "High-cardinality text []: keep length and leading token, drop raw. Dates [] -> year/month/weekday. Frequency-encode ['Neighborhood', 'Exterior1st', 'Exterior2nd']. log1p skewed ['LotFrontage', 'LotArea', 'MasVnrArea', 'BsmtFinSF2', 'LowQualFinSF', 'BsmtHalfBath']. Group target encoding on codes that repeat and reappear in test []. log_target=True.",
+  "drop_columns": [],
+  "log_transform_columns": [
+    "LotFrontage",
+    "LotArea",
+    "MasVnrArea",
+    "BsmtFinSF2",
+    "LowQualFinSF",
+    "BsmtHalfBath"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "Neighborhood",
+    "Exterior1st",
+    "Exterior2nd"
+  ],
+  "text_length_columns": [],
+  "regex_features": [],
+  "ratio_features": [],
+  "group_size_columns": [],
+  "group_target_encoding": [],
+  "add_missing_indicators": true,
+  "log_target": true
+}

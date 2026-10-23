@@ -62,7 +62,7 @@ flowchart LR
   - `runs/<competition>/<run_id>/events.jsonl`: every reasoning, decision, tool call, tool result, error and fallback.
   - `llm_calls.jsonl`: full prompts and responses, with tokens and latency.
   - `plan.json`, `research.json` (notebooks listed and read, external reads, techniques, rules), `feature_plan_v*.json`, `review_it*.json`, `experiments.csv`, `submissions.json` and `summary.json`.
-  - `models/*.joblib`: fold models as checkpoints.
+  - `models/*.joblib`: fold models as checkpoints (a selected rule is saved as `models/<name>.rule.json`). In `runs/evidence`, only run 7 (the 332/418 result) keeps its fitted checkpoint and rule file; the other runs keep `models/best_candidate.json`, to keep the delivery under e-mail attachment size.
   - `plots/*.png`.
   - `runs/<competition>/research_memory.json`: rules validated by earlier research, reused by later runs.
   - `runs/index.jsonl`: one line per attempt.
@@ -180,9 +180,12 @@ Leaderboard positions are where a **new** submission with that score lands on th
 | titanic, run 6 (`group_override` + one-SE selection) | accuracy ↑ | 0.8361 (0.8429) | 311/418 | top 93.6% | 4 / 1 (2nd hit the daily limit) | `runs/evidence/titanic-groq-run6` |
 | **titanic, run 7 (research: notebooks + research memory; typed rules)** | accuracy ↑ | 0.8406 (0.8451) | **332/418 (0.79425)** | **top 11.0% of 11,490 (target 20%: reached)** | 1 / 1 | `runs/evidence/titanic-groq-run7` |
 | titanic (heuristic agents, `--no-submit`) | accuracy ↑ | (0.8418) | | | 4 / 0 | `runs/evidence/titanic-heuristic` |
-| house-prices-advanced-regression-techniques | RMSLE ↓ | not run | | | | |
+| house-prices-advanced-regression-techniques (LLM agents: `openai/gpt-oss-20b`) | RMSLE ↓ | 0.1265 (0.1250) | 0.12715 | top 34.7% of 4,385 (target 20%: not reached) | 4 / 2 (1st: 0.13692) | `runs/evidence/house-prices-run1` |
+| spaceship-titanic (LLM agents: `openai/gpt-oss-20b`, config = slug only) | accuracy ↑ | 0.7959 | 0.79074 | top 79.6% of 1,724 (target 20%: not reached) | 2 / 1 | `runs/evidence/spaceship-titanic-run1` |
 
 **Target: reached by the agent team in run 7: 332/418, top 11.0%.** The Scout and Research agents read public notebooks (live research that run also translated a faithful rule on its own), the research memory carried the rules earlier research had validated, and the Evaluator submitted the woman-child-group rule (CV 0.8406, complexity 4) because the best boosted model (CV 0.8451) is not significantly better on the same rows; the reviewer then stopped on target. Runs 1-6, without research, peaked at 327/418 (top 27.4%). Nothing used leaked labels or multiple accounts. The decisions made after seeing public scores are listed below; run 7's score measures the pipeline as designed after them, not an independent test of those decisions.
+
+**Other competitions, first attempt each.** Both ran end to end with no code change, from a config holding the slug (Spaceship Titanic) or the slug and budget (House Prices); the Planner inferred task, metric, target, id and submission format (Spaceship's target is a True/False column, House Prices is RMSLE regression with a log target). Neither reached the top 20%. House Prices improved from 0.13692 to 0.12715 between its two submissions and used the whole budget; its Data agent's LLM call exceeded the free tier's request size on the 81-column profile and fell back to the heuristic (the profile sent to the LLM is now smaller and always keeps the target). Spaceship Titanic stopped after two rounds because the reviewer LLM read its top-79.6% position as "well above the target", a reasoning error the guardrails let through (they only refuse a stop below target before two rounds exist). Research ran on Spaceship Titanic and adopted no rule, which is what its notebooks support; it is skipped on regression.
 
 **Human involvement, in the order it happened.** The Titanic work was not hands-off, and the later changes were made knowing public scores:
 1. After runs 1-3 (public 321-327), a multi-agent workflow researched leak-free Titanic techniques, implemented three levers in isolated worktrees and had adversarial verifiers reproduce them; only fold-safe group target encoding was kept (+0.6 to +0.7 `cv_lcb` over 5 CV seeds). A one-standard-error selection rule was rejected then (across model families it lost 1.24 ± 0.49 points against `cv_lcb` on 20 held-out splits).

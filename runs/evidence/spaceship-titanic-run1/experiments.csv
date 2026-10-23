@@ -1,0 +1,10 @@
+name,model,iteration,feature_version,cv_score,cv_std,cv_se,cv_lcb,cv_se1,complexity,seconds,params,notes
+it1_lightgbm_high_lr,lightgbm,1,1,0.795928,0.00658,0.002942,0.792985,0.002942,128000.0,15.5,"{'n_estimators': 2000, 'learning_rate': 0.01, 'num_leaves': 64, 'max_depth': -1, 'min_child_samples': 50, 'subsample': 0.6, 'colsample_bytree': 0.6, 'reg_alpha': 0.5, 'reg_lambda': 5.0}",[]
+it1_hist_gb_high_iter,hist_gb,1,1,0.790521,0.005084,0.002274,0.788247,0.002274,128000.0,40.0,"{'max_iter': 2000, 'learning_rate': 0.01, 'max_leaf_nodes': 64, 'min_samples_leaf': 50, 'l2_regularization': 5.0}",[]
+it1_random_forest_max,random_forest,1,1,0.788681,0.009375,0.004193,0.784488,0.004193,3276800.0,11.8,"{'n_estimators': 800, 'max_depth': 40, 'min_samples_leaf': 50, 'max_features': 1.0}",[]
+it1_extra_trees_max,extra_trees,1,1,0.723226,0.005582,0.002496,0.720729,0.002496,3276800.0,9.0,"{'n_estimators': 800, 'max_depth': 40, 'min_samples_leaf': 50, 'max_features': 1.0}",[]
+it1_ensemble,ensemble,1,1,0.794892,0.007764,0.003472,0.79142,0.003472,3532800.0,0.0,"{'weights': {'it1_lightgbm_high_lr': 0.333, 'it1_random_forest_max': 0.333, 'it1_hist_gb_high_iter': 0.333}, 'in_sample_cv': 0.798804}",[]
+it2_lightgbm_mid_lr,lightgbm,2,1,0.780168,0.00555,0.002482,0.777686,0.002482,64000.0,14.2,"{'n_estimators': 2000, 'learning_rate': 0.05, 'num_leaves': 32, 'max_depth': -1, 'min_child_samples': 20, 'subsample': 0.5, 'colsample_bytree': 0.8, 'reg_alpha': 0.0, 'reg_lambda': 1.0}",[]
+it2_lightgbm_low_lr,lightgbm,2,1,0.784424,0.006009,0.002687,0.781737,0.002687,192000.0,27.3,"{'n_estimators': 3000, 'learning_rate': 0.02, 'num_leaves': 64, 'max_depth': -1, 'min_child_samples': 30, 'subsample': 0.6, 'colsample_bytree': 0.6, 'reg_alpha': 0.5, 'reg_lambda': 5.0}",[]
+it2_hist_gb_high_iter,hist_gb,2,1,0.778903,0.006831,0.003055,0.775848,0.003055,128000.0,45.2,"{'max_iter': 2000, 'learning_rate': 0.05, 'max_leaf_nodes': 64, 'min_samples_leaf': 20, 'l2_regularization': 1.0}",[]
+it2_random_forest_mid,random_forest,2,1,0.791786,0.004501,0.002013,0.789774,0.002013,2048000.0,9.2,"{'n_estimators': 500, 'max_depth': 20, 'min_samples_leaf': 5, 'max_features': 0.7}",[]

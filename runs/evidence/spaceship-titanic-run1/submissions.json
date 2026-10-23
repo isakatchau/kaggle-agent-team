@@ -1,0 +1,11 @@
+[
+  {
+    "iteration": 1,
+    "candidate": "it1_lightgbm_high_lr",
+    "cv_score": 0.7959277579661796,
+    "lb_score": 0.79074,
+    "percentile": 0.7959420289855073,
+    "file": "runs\\spaceship-titanic\\20261023T035625Z\\submissions\\it1_lightgbm_high_lr.csv",
+    "leaderboard_size": 1724
+  }
+]

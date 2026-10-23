@@ -1,0 +1,19 @@
+{
+  "reasoning": "The dataset has 8693 training rows and 4277 test rows with 14 columns. The target column is \"Transported\" which is a boolean (dtype bool) and is the only target candidate. The sample submission shows the target column as a bool, implying that the competition expects class labels rather than probabilities. Therefore the natural metric is accuracy, which matches the typical Kaggle binary classification format when labels are submitted. The id column is \"PassengerId\" (dtype str) and appears in both train and test. For a tabular binary classification task, gradient\u2011boosted tree models such as LightGBM and HistGradientBoosting are strong first choices, with RandomForest and ExtraTrees as additional baselines. Linear models can serve as a quick baseline but are unlikely to outperform tree\u2011based methods on this mixed categorical/continuous data. Risks include high\u2011cardinality categorical features (\"Name\" with 8473 unique values, \"Cabin\" with 6560 unique values) that can lead to over\u2011fitting, missing values (up to 7.82% in \"VRDeck\" and 2.34% in \"VIP\"), and potential class imbalance (not quantified but worth checking). No obvious leakage columns are present.",
+  "task": "binary",
+  "metric": "accuracy",
+  "target": "Transported",
+  "id_column": "PassengerId",
+  "submission_format": "label",
+  "candidate_models": [
+    "lightgbm",
+    "hist_gb",
+    "random_forest",
+    "extra_trees"
+  ],
+  "risks": [
+    "high-cardinality categorical features (Name, Cabin)",
+    "missing values",
+    "potential class imbalance"
+  ]
+}

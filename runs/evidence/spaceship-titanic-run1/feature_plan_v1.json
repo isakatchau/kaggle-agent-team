@@ -1,0 +1,39 @@
+{
+  "reasoning": "The training set has 8,693 rows and the test set 4,277 rows.  The target is a binary bool, so accuracy is the metric.  High\u2011cardinality columns are Name (8,473 unique) and Cabin (6,560 unique).  Both have very low test_seen_pct (0.47% for Name, 0% for Cabin), so we cannot use group target encoding on them.  The numeric service columns (RoomService, FoodCourt, ShoppingMall, Spa, VRDeck) are highly skewed (skew > 5 for all except Age) and should be log\u2011transformed.  The categorical columns HomePlanet, Destination, CryoSleep, VIP are low\u2011cardinality and can be frequency\u2011encoded.  For Cabin we extract the deck letter (first character before the first slash) and frequency\u2011encode that; the rest of the cabin string is dropped.  For Name we extract the surname (last word) with a regex capture group and frequency\u2011encode it.  We drop the raw PassengerId, Name, and Cabin columns after extraction.  Missing values are handled by adding indicator columns (add_missing_indicators = true).  No target\u2011encoding or datetime parsing is needed.  The plan below follows these decisions.",
+  "drop_columns": [
+    "Name",
+    "Cabin"
+  ],
+  "log_transform_columns": [
+    "RoomService",
+    "FoodCourt",
+    "ShoppingMall",
+    "Spa",
+    "VRDeck"
+  ],
+  "datetime_columns": [],
+  "frequency_encode_columns": [
+    "HomePlanet",
+    "Destination",
+    "CryoSleep",
+    "VIP"
+  ],
+  "text_length_columns": [],
+  "regex_features": [
+    {
+      "column": "Cabin",
+      "pattern": "^([A-Z])",
+      "name": "CabinDeck"
+    },
+    {
+      "column": "Name",
+      "pattern": "(\\w+)$",
+      "name": "Surname"
+    }
+  ],
+  "ratio_features": [],
+  "group_size_columns": [],
+  "group_target_encoding": [],
+  "add_missing_indicators": true,
+  "log_target": false
+}

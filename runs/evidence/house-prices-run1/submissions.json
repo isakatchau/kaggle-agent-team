@@ -1,0 +1,20 @@
+[
+  {
+    "iteration": 1,
+    "candidate": "it1_lgbm_regularised",
+    "cv_score": 0.13088870862181906,
+    "lb_score": 0.13692,
+    "percentile": 0.5665754673962609,
+    "file": "runs\\house-prices-advanced-regression-techniques\\20261023T040526Z\\submissions\\it1_lgbm_regularised.csv",
+    "leaderboard_size": 4385
+  },
+  {
+    "iteration": 3,
+    "candidate": "it1_histgb_regularised",
+    "cv_score": 0.1264922149296773,
+    "lb_score": 0.12715,
+    "percentile": 0.34724122207022345,
+    "file": "runs\\house-prices-advanced-regression-techniques\\20261023T040526Z\\submissions\\it1_histgb_regularised.csv",
+    "leaderboard_size": 4385
+  }
+]
