@@ -29,6 +29,16 @@ class PlatformError(RuntimeError):
     pass
 
 
+def csv_from_cli(text: str, column: str) -> pd.DataFrame:
+    """CSV printed by the kaggle CLI, skipping anything before its header (e.g. an 'outdated kaggle
+    version' warning on the first line)."""
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if column in line.split(",")), None)  # the header row
+    if start is None:
+        return pd.DataFrame()
+    return pd.read_csv(io.StringIO("\n".join(lines[start:])))
+
+
 class Platform(Protocol):
     name: str
 
@@ -113,7 +123,7 @@ class KaggleCLI:
     @staticmethod
     def _latest_public_score(csv_text: str) -> float | None:
         try:
-            df = pd.read_csv(io.StringIO(csv_text))
+            df = csv_from_cli(csv_text, "publicScore")
         except Exception:
             return None
         if df.empty:
@@ -135,7 +145,7 @@ class KaggleCLI:
         except PlatformError:
             return []
         try:
-            df = pd.read_csv(io.StringIO(out))
+            df = csv_from_cli(out, "ref")
         except Exception:
             return []
         return [{"ref": r.ref, "title": str(r.title), "votes": int(r.totalVotes)} for r in df.itertuples()

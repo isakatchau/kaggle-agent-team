@@ -321,3 +321,14 @@ def test_group_override_ignores_rare_category_levels_when_ordering():
     fm.categorical.append("uid") if "uid" not in fm.categorical else None
     r = run_cv(_no_groups(fm), y, "binary", "accuracy", "t", "group_override", {"depth": 1}, 5, 0)
     assert r.cv_score > 0.8
+
+
+def test_cli_csv_skips_warnings_before_the_header():
+    from kagent.tools.kaggle import KaggleCLI, csv_from_cli
+
+    out = ("Warning: Looks like you're using an outdated `kaggle` version\n"
+           "ref,fileName,date,description,status,publicScore,privateScore\n"
+           "1,a.csv,2026-10-23,x,SubmissionStatus.COMPLETE,0.79426,\n")
+    assert KaggleCLI._latest_public_score(out) == 0.79426
+    assert list(csv_from_cli(out, "ref").columns)[:2] == ["ref", "fileName"]
+    assert csv_from_cli("no csv here", "ref").empty

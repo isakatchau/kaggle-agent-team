@@ -266,7 +266,11 @@ def build_graph(ws: Workspace):
         if remembered:
             log.log("tools", "tool_result", f"{len(remembered)} rules remembered from earlier research",
                     rules=[r.name for r in remembered])
-        fresh = live_research() if cfg.research_notebooks > 0 else []
+        try:
+            fresh = live_research() if cfg.research_notebooks > 0 else []
+        except Exception as exc:  # research is optional: a failure keeps the remembered rules
+            log.log("research", "error", f"live research failed, using research memory only: {exc}")
+            fresh = []
         if fresh:
             remember(path, fresh, log.run_id, (ws.research_llm or ws.llm).name if (ws.research_llm or ws.llm) else "")
         ws.rules = unique_names(remembered + fresh)
