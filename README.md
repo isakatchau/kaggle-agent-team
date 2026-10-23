@@ -62,7 +62,7 @@ flowchart LR
   - `runs/<competition>/<run_id>/events.jsonl`: every reasoning, decision, tool call, tool result, error and fallback.
   - `llm_calls.jsonl`: full prompts and responses, with tokens and latency.
   - `plan.json`, `research.json` (notebooks listed and read, external reads, techniques, rules), `feature_plan_v*.json`, `review_it*.json`, `experiments.csv`, `submissions.json` and `summary.json`.
-  - `models/*.joblib`: fold models as checkpoints (a selected rule is saved as `models/<name>.rule.json`). In `runs/evidence`, run 7 (the 332/418 result) keeps the definition of the rule it submitted (`models/it1_rule_WCG_Model.rule.json`); joblib checkpoints of the runs are not committed, to keep the delivery under e-mail attachment size, and each run keeps `models/best_candidate.json`.
+  - `models/*.joblib`: fold models as checkpoints (a selected rule is saved as `models/<name>.rule.json`). In `runs/evidence`, every run (rehearsals included) keeps its joblib checkpoints and `models/best_candidate.json`; run 7 (the 332/418 result) also keeps the definition of the rule it submitted (`models/it1_rule_WCG_Model.rule.json`).
   - `plots/*.png`.
   - `runs/<competition>/research_memory.json`: rules validated by earlier research, reused by later runs.
   - `runs/index.jsonl`: one line per attempt.
