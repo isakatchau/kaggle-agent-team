@@ -91,13 +91,15 @@ tests/             offline unit + end-to-end tests; e2e/ dashboard browser tests
 
 ## How to run
 
-### 1. Install (Python 3.11+)
+### 1. Install (Python 3.12+; evidence produced on 3.14.6, Docker image 3.12)
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 make setup                     # pip install -r requirements.txt && pip install -e .
-make test                      # offline, no keys needed
+make test                      # offline, no keys needed (about a minute)
 ```
+
+Windows (PowerShell), no `make` needed: `py -3.14 -m venv .venv; .venv\Scripts\Activate.ps1; python -m pip install -r requirements.txt; python -m pip install -e .; python -m pytest -q`. Each Makefile target is one or two `python` commands. `requirements.lock` pins the exact environment the evidence came from (`pip install -r requirements.lock && pip install -e . --no-deps`).
 
 ### 2. Credentials (kept outside the repo)
 
@@ -121,10 +123,19 @@ python -m kagent run --config configs/competitions/titanic.yaml --no-submit
 # heuristic agents only (no OpenAI)
 python -m kagent run --config configs/competitions/titanic.yaml --llm mock
 
-make dashboard                 # http://localhost:8501
+make dashboard                 # http://localhost:8501 (RUNS_DIR=runs/evidence for the committed evidence only)
 ```
 
 **Research** runs on binary tasks, once before the first round: the Scout picks up to `research_notebooks` public notebooks (default 8) and the Research agent writes `research_attempts` independent translations (default 3). Set `research_notebooks: 0` in the YAML to skip reading notebooks. Rules that earlier research validated stay in `runs/<competition>/research_memory.json` and are revalidated and evaluated by every run, with or without reading; delete that file to run without them. With `--llm mock` notebooks are still listed and read, but no new rule is written.
+
+**Reproduce run 7** (the 332/418 result): the research memory is not part of a fresh clone (`runs/` is ignored), so put the committed copy in place, then run as usual (`--no-submit` to keep your daily submissions):
+
+```bash
+mkdir -p runs/titanic && cp runs/evidence/titanic-research/research_memory.json runs/titanic/
+python -m kagent run --config configs/competitions/titanic.yaml --no-submit
+```
+
+The copy holds the rules known after run 7 (run 7 itself started from the 16 seeded ones). To rebuild a memory from the Research agent's logged answers instead: `python scripts/seed_research_memory.py --competition titanic --data data/titanic --target Survived --id-column PassengerId runs/evidence/titanic-research/seed_logs` (the logs keep the answers only, not the notebook text that was sent).
 
 ### 4. New competition
 
@@ -135,8 +146,10 @@ Copy `configs/competitions/playground.yaml` and set `competition:` to the slug i
 ```bash
 make docker-build
 make docker-demo                         # offline
-make docker-run COMP=titanic             # mounts ~/.kaggle read-only and passes .env
+make docker-run COMP=titanic             # mounts ~/.kaggle and passes .env
 ```
+
+In Docker, OAuth credentials from `kaggle auth login` need write access to refresh; a token (`KAGGLE_API_TOKEN` in `.env`, or `~/.kaggle/access_token`) avoids that.
 
 ## Demo guide
 
@@ -157,8 +170,8 @@ Leaderboard positions are where a **new** submission with that score lands on th
 
 | Competition | Metric | CV of submitted (best CV) | Public | Position | Iterations / submissions | Run |
 |---|---|---|---|---|---|---|
-| synthetic-binary (offline, heuristic agents) | ROC AUC ↑ | 0.7735 | 0.7666 | top 6.5% of 400 synthetic teams | 1 / 1 | `runs/evidence/synthetic-binary` |
-| synthetic-regression (offline, heuristic agents, target top 5%) | RMSLE ↓ | 0.2681 | 0.2710 | top 10.0% of 400 synthetic teams | 4 / 1 | `runs/evidence/synthetic-regression` |
+| synthetic-binary (offline, heuristic agents) | ROC AUC ↑ | 0.7748 | 0.7666 | top 6.5% of 400 synthetic teams | 1 / 1 | `runs/evidence/synthetic-binary` |
+| synthetic-regression (offline, heuristic agents, target top 5%) | RMSLE ↓ | 0.2688 | 0.2710 | top 10.0% of 400 synthetic teams | 4 / 1 | `runs/evidence/synthetic-regression` |
 | titanic, run 1 (LLM agents: Groq `openai/gpt-oss-120b`) | accuracy ↑ | 0.8373 (0.8395) | **327/418** | top 27.4% | 4 / 2 (2nd: 322) | `runs/evidence/titanic-groq` |
 | titanic, run 2 (repeated CV + `cv_lcb` gate) | accuracy ↑ | 0.8339 | 321/418 | top 73.3% | 4 / 1 | `runs/evidence/titanic-groq-run2` |
 | titanic, run 3 (reviewer stall guard) | accuracy ↑ | 0.8395 | 321/418 | top 73.3% | 4 / 1 | `runs/evidence/titanic-groq-run3` |
@@ -181,7 +194,7 @@ Leaderboard positions are where a **new** submission with that score lands on th
 
 Measured locally, without submitting: the Scout reached the tutorial (`cdeotte/titanic-wcg-xgboost-0-84688`, 57th by votes) and followed its references to the notebooks that define the rule; in 3 of 5 research executions that got LLM answers at least one translated rule was within 2 test rows of the scored WCG file (CV 0.8406, complexity 4), the others produced looser rules (CV 0.78-0.82); with a faithful rule among run 5's candidates, the Evaluator picks it (the best boosted model is not significantly better, McNemar p = 0.37). A file within 2 rows of a file scored 334/418 scores at least 332/418 (top 20% needs 329). The research depends on the LLM: on Groq's free tier each model allows 200k tokens a day and a run's research takes about 40k.
 
-Because the translation varies between calls, rules that research validates are kept in a **research memory** (`runs/<competition>/research_memory.json`, copy in `runs/evidence/titanic-research`) and every later run revalidates and evaluates them, adding what its own research finds; `scripts/seed_research_memory.py` rebuilt the Titanic memory from the Research agent's logged answers of the day (16 valid rules, 4 of them within 2 rows of the WCG file). Cross-validation ranks those translations correctly: the faithful ones have the highest CV (0.8406) of the 16. Local rehearsals without submitting (`runs/evidence/titanic-research/rehearsal-*`): with heuristic agents and with LLM agents, the team submitted a faithful rule from iteration 1 (in the LLM run the guard also replaced the LLM's later LightGBM picks by it); the selected files bound to 332-334/418, top 11% or better.
+Because the translation varies between calls, rules that research validates are kept in a **research memory** (`runs/<competition>/research_memory.json`, copy in `runs/evidence/titanic-research`) and every later run revalidates and evaluates them, adding what its own research finds; `scripts/seed_research_memory.py` rebuilt the Titanic memory from the Research agent's logged answers of the day (16 valid rules at the time, 4 of them within 2 rows of the WCG file; the answers are in `runs/evidence/titanic-research/seed_logs`, and rebuilding from them with today's stricter validation keeps 18 rules after run 7's own). Cross-validation ranks those translations correctly: the faithful ones have the highest CV (0.8406) of the 16. Local rehearsals without submitting (`runs/evidence/titanic-research/rehearsal-*`): with heuristic agents and with LLM agents, the team submitted a faithful rule from iteration 1 (in the LLM run the guard also replaced the LLM's later LightGBM picks by it); the selected files bound to 332-334/418, top 11% or better.
 
 Any Titanic score submitted after step 4 measures this author-designed pipeline, not an autonomous discovery by the agents, and is not independent confirmation of the rule.
 

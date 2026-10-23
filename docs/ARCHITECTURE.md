@@ -172,7 +172,7 @@ The other files in the run folder are:
 | `leaderboard/` | The public leaderboard, downloaded after the first submission |
 | `plots/*.png` | CV per experiment, best-so-far, CV vs LB |
 
-Outside the run folder: `runs/<competition>/research_memory.json` (section 6), and `runs/index.jsonl`, which appends one summary per run and is what the dashboard lists.
+Outside the run folder: `runs/<competition>/research_memory.json` (section 6), and `runs/index.jsonl`, which appends one summary per run; the dashboard lists every `summary.json` under `RUNS_DIR` (default `runs/`, which includes `runs/evidence/`).
 
 ## 10. Extending
 

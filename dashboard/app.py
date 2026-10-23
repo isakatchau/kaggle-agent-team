@@ -34,7 +34,7 @@ if index.empty:
 st.subheader("Attempts")
 cols = ["run_id", "competition", "platform", "llm", "metric", "iterations", "experiments",
         "best_cv", "submissions", "best_lb", "best_percentile", "target_percentile", "minutes"]
-st.dataframe(index[[c for c in cols if c in index]], hide_index=True, use_container_width=True)
+st.dataframe(index[[c for c in cols if c in index]], hide_index=True, width="stretch")
 
 dirs = {f"{r.competition} / {r.run_id}": Path(r.dir) for r in index.itertuples()}
 run_dir = dirs[st.selectbox("Run", list(dirs))]
@@ -57,7 +57,7 @@ with left:
     except TypeError:
         st.bar_chart(exp.set_index("name")["cv_score"])
     st.dataframe(exp[["iteration", "name", "model", "cv_score", "cv_std", "seconds", "feature_version"]],
-                 hide_index=True, use_container_width=True)
+                 hide_index=True, width="stretch")
 with right:
     st.subheader("Submissions")
     sub_path = run_dir / "submissions.json"

@@ -1,5 +1,5 @@
 {
-  "reasoning": "High-cardinality text ['customer_code']: keep length and leading token, drop raw. Dates ['signup_date'] -> year/month/weekday. Frequency-encode []. log1p skewed ['income']. log_target=True. Reviewer asked for features: ratios among top numerics ['income', 'tenure_years', 'age', 'visits'], group size [['region', 'plan']].",
+  "reasoning": "High-cardinality text ['customer_code']: keep length and leading token, drop raw. Dates ['signup_date'] -> year/month/weekday. Frequency-encode []. log1p skewed ['income']. Group target encoding on codes that repeat and reappear in test []. log_target=True. Reviewer asked for features: ratios among top numerics ['income', 'tenure_years', 'age', 'visits'], group size [['region', 'plan']].",
   "drop_columns": [
     "customer_code"
   ],
@@ -52,6 +52,7 @@
       "plan"
     ]
   ],
+  "group_target_encoding": [],
   "add_missing_indicators": true,
   "log_target": true
 }

@@ -12,7 +12,8 @@ test:             ## offline test suite (no keys needed)
 
 e2e:              ## dashboard browser tests, video under runs/evidence/videos
 	$(PY) -m playwright install chromium
-	$(PY) -m pytest -m e2e --video on --output runs/evidence/videos
+	$(PY) -m pytest -m e2e --video on --output runs/_e2e
+	$(PY) -c "import pathlib,shutil; [shutil.copy(p, pathlib.Path('runs/evidence/videos')/(p.parent.name.split('test-')[-1][:40]+'.webm')) for p in pathlib.Path('runs/_e2e').glob('*/video.webm')]"
 
 demo:             ## offline end-to-end run on a generated competition
 	$(PY) -m kagent demo --task binary
@@ -31,5 +32,5 @@ docker-demo:
 	docker run --rm -v $(PWD)/runs:/app/runs kagent demo
 
 docker-run:
-	docker run --rm --env-file .env -v $(HOME)/.kaggle:/root/.kaggle:ro -v $(PWD)/runs:/app/runs \
+	docker run --rm --env-file .env -v $(HOME)/.kaggle:/root/.kaggle -v $(PWD)/runs:/app/runs \
 		kagent run --config configs/competitions/$(COMP).yaml --llm $(LLM)

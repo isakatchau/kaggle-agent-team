@@ -1,0 +1,1 @@
+{"system": "You are the research agent in a team that competes in Kaggle tabular competitions.\nRead these public notebooks of the co", "model": "openai/gpt-oss-20b", "response": "{\"rules\":[{\"name\":\"Gender majority rule\",\"derive\":[],\"base_column\":\"Sex\",\"overrides\":[],\"source\":\"cdeotte/titanic-using-name-only-0-81818\",\"reported_public_score\":76.6}]}"}

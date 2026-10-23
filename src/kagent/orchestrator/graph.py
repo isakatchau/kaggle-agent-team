@@ -30,7 +30,7 @@ from ..tools import metrics as M
 from ..tools.features import FeatureMatrix, build_features
 from ..tools.notebooks import load_notebook
 from ..agents.schemas import RuleModel
-from ..tools.memory import load_memory, remember, unique_names
+from ..tools.memory import forget, load_memory, remember, safe_name, unique_names
 from ..tools.rules import run_rule_cv, validate_rule
 from ..tools.kaggle import Platform, PlatformError, percentile
 from ..tools.profile import compact_profile, load_competition_files, profile
@@ -78,6 +78,12 @@ class Workspace:
     @property
     def metric(self) -> str:
         return self.plan.metric
+
+    @property
+    def rule_columns(self) -> list[str]:
+        """Columns rules may use: in both train and test (a train-only column can record the outcome)."""
+        return [c for c in self.train.columns if c not in (self.plan.target, self.plan.id_column)
+                and c in self.test.columns]
 
     @property
     def group_override_available(self) -> bool:
@@ -173,7 +179,7 @@ def build_graph(ws: Workspace):
         if not listing:
             log.log("tools", "tool_result", "no public notebooks")
             return []
-        columns = [c for c in ws.train.columns if c not in (ws.plan.target, ws.plan.id_column)]
+        columns = ws.rule_columns
         reading = scout.decide({"competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric,
                                 "target": ws.plan.target, "columns": columns, "listing": listing,
                                 "max_read": cfg.research_notebooks})
@@ -219,7 +225,7 @@ def build_graph(ws: Workspace):
             return []
         examples = {c["name"]: c["examples"][:3] for c in ws.profile["columns"] if c["name"] in columns}
         base_ctx = {
-            "_data": pd.concat([ws.train.drop(columns=[ws.plan.target]), ws.test], ignore_index=True),
+            "_data": pd.concat([ws.train[columns], ws.test[columns]], ignore_index=True),
             "_attempts": cfg.research_attempts,
             "competition": cfg.competition, "task": ws.plan.task, "metric": ws.metric, "target": ws.plan.target,
             "classes": [str(c) for c in ws.classes] if ws.classes is not None else None,
@@ -256,12 +262,19 @@ def build_graph(ws: Workspace):
         if ws.plan.task != "binary":
             return {}
         path = cfg.runs_dir / cfg.competition / "research_memory.json"
-        columns = [c for c in ws.train.columns if c not in (ws.plan.target, ws.plan.id_column)]
-        data = pd.concat([ws.train.drop(columns=[ws.plan.target]), ws.test], ignore_index=True)
+        columns = ws.rule_columns
+        data = pd.concat([ws.train[columns], ws.test[columns]], ignore_index=True)
         remembered = []
         for entry in load_memory(path):
-            rule = RuleModel.model_validate(entry["rule"])
-            if not validate_rule(rule, columns, data):
+            try:  # an entry written by an older version, or for other data, is skipped, not fatal
+                rule = RuleModel.model_validate(entry["rule"])
+                issues = validate_rule(rule, columns, data)
+            except Exception as exc:
+                log.log("tools", "error", f"research memory entry skipped: {exc}")
+                continue
+            if issues:
+                log.log("tools", "tool_result", f"remembered rule {rule.name} no longer valid: {issues[:2]}")
+            else:
                 remembered.append(rule)
         if remembered:
             log.log("tools", "tool_result", f"{len(remembered)} rules remembered from earlier research",
@@ -351,21 +364,29 @@ def build_graph(ws: Workspace):
                 name += "_"
             batch.experiments.append(Experiment(name=name, model="group_override"))
             log.log("modeling", "decision", "added group_override at its defaults: the simplest candidate")
+        failed = []
         for rule in ws.rules:
             if any(r.model == "rule" and r.params.get("name") == rule.name for r in ws.results):
                 continue
-            name = f"it{state['iteration']}_rule_{rule.name}"[:60]
+            taken = {r.name for r in ws.results}
+            name = f"it{state['iteration']}_rule_{safe_name(rule.name)}"[:60]
+            while name in taken:
+                name = name[:59] + "_" if len(name) >= 60 else name + "_"
             log.log("tools", "tool_call", f"cross-validate rule {rule.name} from {rule.source or 'research'}")
             try:
-                res = run_rule_cv(rule, ws.train.drop(columns=[ws.plan.target]), ws.test, ws.y, ws.metric, name,
+                res = run_rule_cv(rule, ws.train[ws.rule_columns], ws.test[ws.rule_columns], ws.y, ws.metric, name,
                                   cfg.cv_folds, cfg.seed, repeats=ws.cv_repeats)
-            except Exception as exc:  # a rule that cannot run must not end the run
-                log.log("tools", "error", f"rule {rule.name} failed: {exc}")
+            except Exception as exc:  # a rule that cannot run must not end the run, nor be retried every round
+                log.log("tools", "error", f"rule {rule.name} failed and is dropped: {exc}")
+                failed.append(rule)
                 continue
             res.iteration, res.feature_version = state["iteration"], ws.feature_version
             ws.results.append(res)
             log.log("tools", "tool_result", f"{name} cv={res.cv_score:.5f} (rule, complexity {res.complexity:.0f})",
                     result=res.summary())
+        if failed:
+            ws.rules = [r for r in ws.rules if r not in failed]
+            forget(cfg.runs_dir / cfg.competition / "research_memory.json", failed)
         for exp in batch.experiments:
             log.log("tools", "tool_call", f"train {exp.name} ({exp.model})", params=exp.params)
             try:
@@ -431,10 +452,13 @@ def build_graph(ws: Workspace):
         decision = evaluator.decide(ctx)
         cand = next(r for r in ws.results if r.name == decision.candidate)
         ws.selected = cand
-        path = log.run_dir / "submissions" / f"{cand.name}.csv"
-        write_submission(path, ws.sample, ws.test[ws.plan.id_column], cand.test_pred,
-                         ws.plan.submission_format, ws.classes, ws.plan.id_column)
-        problems = check_submission(path, ws.sample)
+        path = log.run_dir / "submissions" / f"{safe_name(cand.name)}.csv"
+        try:
+            write_submission(path, ws.sample, ws.test[ws.plan.id_column], cand.test_pred,
+                             ws.plan.submission_format, ws.classes, ws.plan.id_column)
+            problems = check_submission(path, ws.sample)
+        except Exception as exc:
+            problems = [f"could not write the submission: {exc}"]
         if problems:
             log.log("evaluator", "error", "submission failed pre-flight checks", problems=problems)
             return {}
@@ -485,6 +509,10 @@ def build_graph(ws: Workspace):
         return {"iteration": state["iteration"] + 1, "focus": review.next_focus, "done": False}
 
     def prune_checkpoints(best: ExperimentResult | None) -> None:
+        # a selected rule has no fitted file: its definition is the checkpoint
+        for r in (best, ws.selected):
+            if r is not None and r.model == "rule":
+                log.save_json(f"models/{safe_name(r.name)}.rule.json", r.params)
         if cfg.keep_checkpoints == "all" or best is None:
             return
         keep = set()

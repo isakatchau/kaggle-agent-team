@@ -150,9 +150,9 @@ class ExperimentResult:
             # rough count of fitted decisions; the Evaluator prefers the simplest of statistically tied candidates
             "complexity": round(self.complexity, 1),
             "seconds": round(self.seconds, 1),
+            # a rule's free text (source, reported score) came from notebooks: other agents only see its shape
             "params": self.params if self.model != "rule" else {
-                k: self.params.get(k) for k in ("name", "source", "reported_public_score", "base_column")
-            } | {"overrides": len(self.params.get("overrides", []))},
+                "base_column": self.params.get("base_column"), "overrides": len(self.params.get("overrides", []))},
             "notes": self.notes,
         }
 

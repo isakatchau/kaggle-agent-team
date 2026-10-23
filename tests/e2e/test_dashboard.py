@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import subprocess
@@ -19,6 +20,8 @@ pytestmark = pytest.mark.e2e
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "runs" / "evidence"
+RUN_ID = {c: json.loads((EVIDENCE / c / "summary.json").read_text())["run_id"]
+          for c in ("synthetic-binary", "synthetic-regression")}
 
 
 def _free_port() -> int:
@@ -60,7 +63,7 @@ def test_attempts_table_lists_every_run(page, dashboard_url):
     _open(page, dashboard_url)
     page.get_by_text("Attempts").wait_for()
     box = page.get_by_test_id("stSelectbox")
-    for label in ("synthetic-binary / 20261021T030536Z", "synthetic-regression / 20261021T030558Z"):
+    for label in (f"synthetic-binary / {RUN_ID['synthetic-binary']}", f"synthetic-regression / {RUN_ID['synthetic-regression']}"):
         box.click()
         box.locator("input").fill(label.split(" / ")[0])
         assert page.get_by_role("option", name=label).is_visible()
@@ -72,7 +75,7 @@ def test_selected_run_shows_scores_and_agent_timeline(page, dashboard_url):
     box = page.get_by_test_id("stSelectbox")
     box.click()
     box.locator("input").fill("synthetic-regression")  # the option list is virtualised: filter, then pick
-    page.get_by_role("option", name="synthetic-regression / 20261021T030558Z").click()
+    page.get_by_role("option", name=f"synthetic-regression / {RUN_ID['synthetic-regression']}").click()
 
     page.get_by_text("Best CV (rmsle)").wait_for(timeout=30_000)  # Streamlit reruns after the selection
     metrics = page.get_by_test_id("stMetric")

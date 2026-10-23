@@ -9,6 +9,7 @@ run found. Selection between remembered and new rules is left to cross-validatio
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from ..agents.schemas import RuleModel
@@ -39,6 +40,20 @@ def remember(path: Path, rules: list[RuleModel], found_in: str, model: str) -> l
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"rules": memory}, indent=2), encoding="utf-8")
     return memory
+
+
+def forget(path: Path, rules: list[RuleModel]) -> None:
+    """Drop rules that failed to run, so later runs do not retry them."""
+    if not path.exists():
+        return
+    drop = {rule_key(r) for r in rules}
+    memory = [m for m in load_memory(path) if rule_key(RuleModel.model_validate(m["rule"])) not in drop]
+    path.write_text(json.dumps({"rules": memory}, indent=2), encoding="utf-8")
+
+
+def safe_name(name: str) -> str:
+    """A name written by a language model, made safe for file names and logs."""
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("._")[:40] or "rule"
 
 
 def unique_names(rules: list[RuleModel]) -> list[RuleModel]:

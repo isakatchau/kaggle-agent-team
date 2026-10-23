@@ -21,11 +21,21 @@ from ..agents.schemas import Condition, RuleModel
 from . import metrics as M
 
 
+# a regex written from notebook text runs on every row: nested quantifiers can backtrack for minutes
+NESTED_QUANTIFIER = re.compile(r"\((?:[^()\\]|\\.)*[+*}](?:[^()\\]|\\.)*\)[+*{]")
+MAX_TEXT = 300  # characters of a cell a derive regex sees
+
+
 def _frame(rule: RuleModel, train: pd.DataFrame, test: pd.DataFrame) -> pd.DataFrame:
     full = pd.concat([train, test], ignore_index=True)
     for r in rule.derive:
-        full[r.name] = full[r.column].astype(str).str.extract(r.pattern, expand=False).str.strip()
+        text = full[r.column].astype(str).str.slice(0, MAX_TEXT)
+        full[r.name] = text.str.extract(r.pattern, expand=False).str.strip()
     return full
+
+
+def _numeric(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
 def _mask(full: pd.DataFrame, conds: list[Condition]) -> np.ndarray:
@@ -38,7 +48,11 @@ def _mask(full: pd.DataFrame, conds: list[Condition]) -> np.ndarray:
         elif c.op == "notna":
             m &= col.notna().to_numpy()
         elif c.op in ("in", "not_in"):
-            hit = col.astype(str).isin([str(x) for x in (v if isinstance(v, list) else [v])]).to_numpy()
+            values = v if isinstance(v, list) else [v]
+            if values and all(_numeric(x) for x in values):  # 30 must match 30.0 in a float column
+                hit = pd.to_numeric(col, errors="coerce").isin([float(x) for x in values]).to_numpy()
+            else:
+                hit = col.astype(str).isin([str(x) for x in values]).to_numpy()
             m &= hit if c.op == "in" else ~hit
         elif c.op in ("==", "!="):
             hit = (col.astype(str) == str(v)) if isinstance(v, str) else (pd.to_numeric(col, errors="coerce") == v)
@@ -64,6 +78,17 @@ def validate_rule(rule: RuleModel, columns: list[str], data: pd.DataFrame | None
             continue
         if groups != 1:
             issues.append(f"derive {r.name}: the regex needs exactly one capture group, it has {groups}")
+        if len(r.pattern) > 200 or NESTED_QUANTIFIER.search(r.pattern):
+            issues.append(f"derive {r.name}: regex too long or with nested quantifiers; use a simple pattern")
+    conds_all = [c for o in rule.overrides for c in o.when] + [c for o in rule.overrides for alt in o.members_when for c in alt]
+    for c in conds_all:
+        v = c.value
+        if c.op in ("==", "!=") and (isinstance(v, list) or v is None):
+            issues.append(f"condition {c.column} {c.op}: needs one value, got {v!r} (use 'in' for several)")
+        elif c.op in ("<", "<=", ">", ">=") and not _numeric(v):
+            issues.append(f"condition {c.column} {c.op}: needs a number, got {v!r}")
+        elif c.op in ("in", "not_in") and (v is None or v == []):
+            issues.append(f"condition {c.column} {c.op}: needs a value or a list of values")
     cols = [rule.base_column] + [c.column for o in rule.overrides for c in o.when]
     cols += [k for o in rule.overrides for k in o.group_keys]
     cols += [c.column for o in rule.overrides for alt in o.members_when for c in alt]
@@ -72,14 +97,25 @@ def validate_rule(rule: RuleModel, columns: list[str], data: pd.DataFrame | None
                if o.if_all not in (0, 1) or o.set_to not in (0, 1)]
     if issues or data is None:
         return issues
-    full = _frame(rule, data, data.iloc[:0])
+    try:
+        full = _frame(rule, data, data.iloc[:0])
+    except Exception as exc:  # e.g. a regex the engine rejects at run time
+        return [f"derive failed on the data: {exc}"]
     issues += [f"derive {r.name}: the regex {r.pattern!r} matches no row of {r.column}; it takes values like "
                f"{full[r.column].dropna().astype(str).head(3).tolist()}" for r in rule.derive if full[r.name].isna().all()]
-    conds = [c for o in rule.overrides for c in o.when] + [c for o in rule.overrides for alt in o.members_when for c in alt]
-    for c in conds:
-        if c.op in ("==", "in") and not _mask(full, [c]).any():
-            seen = full[c.column].dropna().astype(str).value_counts().index[:12].tolist()
-            issues.append(f"condition {c.column} {c.op} {c.value!r} matches no row; {c.column} takes values like {seen}")
+    for c in conds_all:
+        try:
+            if c.op in ("==", "in", "!=", "not_in"):
+                # a value no row has is a translation error: for ==/in nothing matches, for !=/not_in nothing is excluded
+                probe = c.model_copy(update={"op": "==" if c.op in ("==", "!=") else "in"})
+                if not _mask(full, [probe]).any():
+                    seen = full[c.column].dropna().astype(str).value_counts().index[:12].tolist()
+                    issues.append(f"condition {c.column} {c.op} {c.value!r}: no row has that value; "
+                                  f"{c.column} takes values like {seen}")
+            else:
+                _mask(full, [c])
+        except Exception as exc:
+            issues.append(f"condition {c.column} {c.op} {c.value!r} cannot be evaluated: {exc}")
     return issues
 
 
@@ -96,11 +132,13 @@ def predict_rule(rule: RuleModel, full: pd.DataFrame, y_full: np.ndarray, known:
         members = np.zeros(len(full), dtype=bool)
         for alt in (o.members_when or [[]]):
             members |= _mask(full, alt)
+        # every row with a complete key belongs to its group; members_when only decides whose labels count
+        # (and the group's size), so a non-member can still be overridden by its group-mates' outcome
         parts = full[o.group_keys].astype("string")
-        key = parts.fillna("").agg("|".join, axis=1).where(parts.notna().all(axis=1) & members)
-        size = key.map(key.value_counts())
+        key = parts.fillna("").agg("|".join, axis=1).where(parts.notna().all(axis=1))
+        size = key.map(key.where(members).value_counts()).fillna(0)
         key = key.where(size >= o.min_group_size)
-        lab = pd.DataFrame({"key": key[is_known], "y": y_full[is_known]}).dropna(subset=["key"])
+        lab = pd.DataFrame({"key": key[is_known & members], "y": y_full[is_known & members]}).dropna(subset=["key"])
         stats = lab.groupby("key")["y"].agg(["sum", "count"])
         k = key.iloc[rows]
         n = k.map(stats["count"]).fillna(0).to_numpy()

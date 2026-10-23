@@ -126,7 +126,7 @@ def test_rule_validation_with_data_catches_translation_errors(tmp_path):
     wrong = RuleModel.model_validate({**RULE, "overrides": [{**RULE["overrides"][0],
                                       "when": [{"column": "kind", "op": "in", "value": ["woman", "boy"]}]}]})
     issues = validate_rule(wrong, ["id", "kind", "name"], data)
-    assert len(issues) == 1 and "matches no row" in issues[0] and "'a'" in issues[0]
+    assert len(issues) == 1 and "no row has that value" in issues[0] and "'a'" in issues[0]
     assert validate_rule(RuleModel.model_validate(RULE), ["id", "kind", "name"], data) == []
 
 
@@ -186,3 +186,56 @@ def test_research_memory_carries_rules_to_later_runs_without_research(tmp_path):
     second = RunLogger.create(cfg.runs_dir, cfg.competition, verbose=False)
     run(Workspace(cfg=cfg, platform=OfflineKaggle(root), logger=second, llm=None, submit_enabled=False))
     assert "it1_rule_household" in set(pd.read_csv(second.run_dir / "experiments.csv")["name"])
+
+
+def test_rule_values_are_type_checked_and_bad_values_reported_not_raised():
+    train, test = _households()
+    data = pd.concat([train.drop(columns="y"), test], ignore_index=True)
+    cond = lambda c: RuleModel.model_validate({**RULE, "overrides": [{**RULE["overrides"][0], "when": [c]}]})
+    cols = ["id", "kind", "name"]
+    assert "needs one value" in validate_rule(cond({"column": "kind", "op": "==", "value": ["a", "b"]}), cols, data)[0]
+    assert "needs a number" in validate_rule(cond({"column": "kind", "op": "<", "value": "16"}), cols, data)[0]
+    assert "no row has that value" in validate_rule(cond({"column": "kind", "op": "not_in", "value": ["man"]}), cols, data)[0]
+    nested = RuleModel.model_validate({**RULE, "derive": [{"column": "name", "pattern": "^((a+)+),", "name": "family"}]})
+    assert any("nested quantifiers" in i for i in validate_rule(nested, cols, data))
+
+
+def test_numeric_in_matches_float_columns_and_members_only_choose_evidence():
+    from kagent.tools.rules import _frame, _mask, predict_rule
+    df = pd.DataFrame({"age": [30.0, 31.0, 5.0], "kind": ["b", "a", "a"], "fam": ["f", "f", "f"]})
+    m = _mask(df, [RuleModel.model_validate({**RULE, "overrides": [{**RULE["overrides"][0], "when": [
+        {"column": "age", "op": "not_in", "value": [30, 31]}]}]}).overrides[0].when[0]])
+    assert m.tolist() == [False, False, True]
+    # a father (kind b, not a member) is set to survive because every member (kind a) of his family survived
+    rule = RuleModel.model_validate({"name": "r", "base_column": "kind", "overrides": [{
+        "when": [{"column": "kind", "op": "==", "value": "b"}], "group_keys": ["fam"],
+        "members_when": [[{"column": "kind", "op": "==", "value": "a"}]], "if_all": 1, "set_to": 1}]})
+    y = np.array([0, 1, 1])
+    full = _frame(rule, df, df.iloc[:0])
+    assert predict_rule(rule, full, y, np.array([1, 2]), np.array([0])).tolist() == [1]
+
+
+def test_memory_skips_bad_entries_and_rule_names_are_path_safe(tmp_path):
+    from kagent.tools.memory import load_memory, safe_name
+    assert safe_name("../../data/comp/train") == "data_comp_train"
+    assert safe_name("Age<16 boys: cat?") == "Age_16_boys_cat"
+    train, test = _households(seed=3)
+    root = tmp_path / "hh"
+    root.mkdir()
+    train.assign(leak=train["y"]).to_csv(root / "train.csv", index=False)  # train-only column recording y
+    test.to_csv(root / "test.csv", index=False)
+    test[["id"]].assign(y=0).to_csv(root / "sample_submission.csv", index=False)
+    (root / "_meta.json").write_text(json.dumps({"metric": "accuracy"}))
+    mem = tmp_path / "runs" / "hh" / "research_memory.json"
+    mem.parent.mkdir(parents=True)
+    leak_rule = {**RULE, "name": "../../oops", "base_column": "leak", "overrides": []}
+    stale = {**RULE, "name": "stale", "overrides": [{**RULE["overrides"][0], "min_group_size": 1}]}
+    mem.write_text(json.dumps({"rules": [{"rule": RULE}, {"rule": leak_rule}, {"rule": stale}]}))
+    cfg = RunConfig(competition="hh", data_dir=tmp_path, runs_dir=tmp_path / "runs", cv_folds=3, metric="accuracy")
+    cfg.budget.max_iterations = 1
+    cfg.budget.max_experiments_per_iteration = 1
+    logger = RunLogger.create(cfg.runs_dir, cfg.competition, verbose=False)
+    run(Workspace(cfg=cfg, platform=OfflineKaggle(root), logger=logger, llm=None, submit_enabled=False))
+    names = set(pd.read_csv(logger.run_dir / "experiments.csv")["name"])
+    assert "it1_rule_household" in names and not any("oops" in n for n in names)  # the leak column is not usable
+    assert all(p.parent.name == "submissions" for p in (logger.run_dir / "submissions").glob("*.csv"))

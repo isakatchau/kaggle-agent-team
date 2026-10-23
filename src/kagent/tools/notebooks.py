@@ -1,8 +1,9 @@
 """Public notebooks of a competition, as text for the Research agent.
 
 Notebooks are downloaded and read, never executed. A notebook that reads data from anywhere but the
-competition's own files (another dataset, a URL to a .csv) is marked as leaking and left out: on
-Titanic that is how perfect scores are made (the full passenger list with outcomes is public).
+competition's own files (another dataset, a URL to a .csv) is flagged: its text can still describe a
+technique, but rules only ever use the competition's columns, and its reported score may come from that
+data (on Titanic, perfect scores come from the public passenger list with outcomes).
 """
 
 from __future__ import annotations

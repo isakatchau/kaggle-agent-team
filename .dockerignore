@@ -1,0 +1,9 @@
+.venv/
+data/
+runs/
+.env
+kaggle.json
+.git/
+.claude/
+**/__pycache__/
+*.egg-info/

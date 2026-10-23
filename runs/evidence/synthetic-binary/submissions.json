@@ -2,10 +2,10 @@
   {
     "iteration": 1,
     "candidate": "it1_linear_base",
-    "cv_score": 0.7735473079067621,
-    "lb_score": 0.7666161035777217,
+    "cv_score": 0.7748301299100819,
+    "lb_score": 0.766623253913532,
     "percentile": 0.06483790523690773,
-    "file": "runs/synthetic-binary/20261021T030536Z/submissions/it1_linear_base.csv",
+    "file": "runs\\synthetic-binary\\20261023T034534Z\\submissions\\it1_linear_base.csv",
     "leaderboard_size": 400
   }
 ]

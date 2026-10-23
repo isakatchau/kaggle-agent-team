@@ -1,0 +1,83 @@
+{
+  "name": "WCG Model",
+  "derive": [
+    {
+      "column": "Name",
+      "pattern": ".*,(.*)\\..*",
+      "name": "Title"
+    },
+    {
+      "column": "Name",
+      "pattern": "^(.*),.*",
+      "name": "Surname"
+    }
+  ],
+  "base_column": "Sex",
+  "overrides": [
+    {
+      "when": [
+        {
+          "column": "Title",
+          "op": "==",
+          "value": "Master"
+        }
+      ],
+      "group_keys": [
+        "Surname",
+        "Pclass",
+        "Ticket"
+      ],
+      "members_when": [
+        [
+          {
+            "column": "Title",
+            "op": "in",
+            "value": [
+              "Master",
+              "Mrs",
+              "Miss"
+            ]
+          }
+        ]
+      ],
+      "min_group_size": 2,
+      "if_all": 1,
+      "set_to": 1
+    },
+    {
+      "when": [
+        {
+          "column": "Title",
+          "op": "in",
+          "value": [
+            "Mrs",
+            "Miss"
+          ]
+        }
+      ],
+      "group_keys": [
+        "Surname",
+        "Pclass",
+        "Ticket"
+      ],
+      "members_when": [
+        [
+          {
+            "column": "Title",
+            "op": "in",
+            "value": [
+              "Master",
+              "Mrs",
+              "Miss"
+            ]
+          }
+        ]
+      ],
+      "min_group_size": 2,
+      "if_all": 0,
+      "set_to": 0
+    }
+  ],
+  "source": "cdeotte/titantic-mega-model-0-84210",
+  "reported_public_score": 0.83
+}

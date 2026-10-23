@@ -25,13 +25,18 @@ class OpenAIClient:
         self.model = os.getenv(model_env) or os.getenv("OPENAI_MODEL", model)
         # free tiers cap output tokens per minute; an explicit ceiling keeps requests under it
         cap = os.getenv(f"{model_env.replace('OPENAI_MODEL', 'OPENAI_MAX_TOKENS')}")
-        self.max_tokens = int(cap) if cap else None
+        try:
+            self.max_tokens = int(cap) if cap else None
+        except ValueError as exc:
+            raise LLMError(f"{model_env.replace('OPENAI_MODEL', 'OPENAI_MAX_TOKENS')} must be an integer") from exc
         # reasoning models spend output tokens thinking before the JSON; providers that support it can cap that
         self.reasoning_effort = os.getenv(model_env.replace("OPENAI_MODEL", "OPENAI_REASONING_EFFORT"))
         self.temperature = temperature
         self.log_path = log_path
         host = urlparse(os.getenv("OPENAI_BASE_URL", "")).hostname or "api.openai.com"
-        self.name = f"{host.split('.')[-2]}:{self.model}"  # openai:gpt-4o-mini, groq:openai/gpt-oss-120b
+        parts = host.split(".")
+        label = host if len(parts) < 2 or host.replace(".", "").isdigit() else parts[-2]  # localhost, 127.0.0.1
+        self.name = f"{label}:{self.model}"  # openai:gpt-4o-mini, groq:openai/gpt-oss-120b
 
     def complete_json(self, system: str, user: str) -> dict:
         t0 = time.time()

@@ -94,6 +94,9 @@ def cmd_kaggle(args) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    for stream in (sys.stdout, sys.stderr):  # agents' reasoning is unicode; Windows pipes default to cp1252
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     # verify TLS against the OS store: TLS-inspecting antivirus and corporate proxies put their root there
     truststore.inject_into_ssl()
     p = argparse.ArgumentParser(prog="kagent", description="Multi-agent Kaggle team")

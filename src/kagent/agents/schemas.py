@@ -123,10 +123,10 @@ class ReadingList(BaseModel):
 
 class ResearchNotes(BaseModel):
     # rules first and short prose: free tiers cap output tokens, and the rules are what the team can use
-    rules: list[RuleModel] = Field(default=[], max_length=4,
+    rules: list[RuleModel] = Field(default=[], max_length=3,
                                    description="Techniques that are rules over columns, written in this schema; "
                                                "they are cross-validated like any model")
-    techniques: list[Technique] = Field(default=[], max_length=5)
+    techniques: list[Technique] = Field(default=[], max_length=3)
     reasoning: str = Field(description="At most two sentences")
 
 

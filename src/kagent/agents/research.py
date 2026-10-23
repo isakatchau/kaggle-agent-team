@@ -102,7 +102,10 @@ class ResearchAgent(Agent[ResearchNotes]):
             return d.model_copy(update={"rules": []}), notes
         self._rejected = []
         for rule in d.rules:
-            issues = validate_rule(rule, ctx["columns"], ctx.get("_data"))
+            try:
+                issues = validate_rule(rule, ctx["columns"], ctx.get("_data"))
+            except Exception as exc:  # one malformed rule must not discard the others
+                issues = [f"could not validate: {exc}"]
             if issues:
                 notes.append(f"rule {rule.name} dropped: {issues}")
                 self._rejected.append({"rule": rule.model_dump(), "problems": issues})
